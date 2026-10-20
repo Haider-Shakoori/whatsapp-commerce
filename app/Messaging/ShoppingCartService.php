@@ -146,7 +146,7 @@ final class ShoppingCartService
         $variant = $item->product_variant_id
             ? $product->variants()->whereKey($item->product_variant_id)->first()
             : null;
-        if ($variant && ! $variant->is_active) {
+        if (($item->variant_name !== null && ! $variant) || ($variant && ! $variant->is_active)) {
             throw new CartException('The selected variant is no longer available.');
         }
         $this->assertStock($cart, $product, $variant, $quantity, $item->id);
