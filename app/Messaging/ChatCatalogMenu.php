@@ -215,7 +215,7 @@ final class ChatCatalogMenu
 
     private function eligibleProducts(MessagingChannel $channel, ?int $categoryId): Builder
     {
-        $query = $channel->merchant->products();
+        $query = $channel->merchant->products()->getQuery();
         $this->filterAvailable($query);
 
         if ($categoryId !== null) {
