@@ -6,6 +6,11 @@ use App\Models\MessagingChannel;
 
 interface MessagingTransport
 {
-    /** Return the provider's outbound message ID when accepted. */
-    public function sendText(MessagingChannel $channel, string $recipient, string $text): string;
+    /** Return the provider message ID only on a positively acknowledged send. */
+    public function sendText(
+        MessagingChannel $channel,
+        string $recipient,
+        string $text,
+        ?string $idempotencyKey = null
+    ): string;
 }

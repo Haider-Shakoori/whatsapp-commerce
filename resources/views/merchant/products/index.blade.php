@@ -8,7 +8,7 @@
         <h1 style="margin-top:12px">{{ $merchant->name }} · Products</h1>
         <p class="muted">Catalog management · {{ $merchant->currency }} · WhatsApp publishing not yet enabled</p>
     </div>
-    @if($canManage)<a class="btn" href="{{ route('merchant.products.create', $merchant) }}">+ Add product</a>@endif
+    @if($canManage)<div class="actions"><a class="btn btn-light" href="{{ route('merchant.channels.index', $merchant) }}">WhatsApp connections</a><a class="btn" href="{{ route('merchant.products.create', $merchant) }}">+ Add product</a></div>@endif
 </div>
 <section class="grid" style="margin:22px 0">
     <div class="card"><p class="muted">Products</p><div class="kpi">{{ $merchant->products()->count() }}</div></div>
