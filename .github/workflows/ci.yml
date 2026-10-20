@@ -1,0 +1,33 @@
+name: Laravel Foundation CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
+          coverage: none
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          mkdir -p database
+          touch database/database.sqlite
+      - name: Validate framework bootstrap
+        run: php artisan about
+      - name: Run automated tests
+        run: php artisan test --no-ansi
+      - name: Check code formatting
+        run: vendor/bin/pint --test
