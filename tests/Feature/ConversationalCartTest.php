@@ -165,7 +165,7 @@ class ConversationalCartTest extends TestCase
     public function test_stock_is_checked_across_variants_and_quantity_updates(): void
     {
         [$merchant, $channel] = $this->shop('stock');
-        $p = $this->product($merchant, 'Shirt', 10000, 3);
+        $p = $this->product($merchant, 'Shirt', 10000, 5);
         foreach (['Red', 'Blue'] as $color) {
             $p->variants()->create(['merchant_id' => $merchant->id, 'name' => $color,
                 'price_delta_minor' => 0, 'stock_quantity' => 2, 'is_active' => true]);
@@ -175,9 +175,9 @@ class ConversationalCartTest extends TestCase
         $this->say($channel, '1');
         $this->say($channel, 'ADD 2');
         $this->assertStringContainsString('insufficient stock', $this->say($channel, '1'));
-        $this->say($channel, 'ADD 2');
+        $this->say($channel, 'ADD 4');
         $this->assertStringContainsString('Not enough available stock', $this->say($channel, '2'));
-        $this->assertStringContainsString('Not enough available stock', $this->say($channel, 'QTY 1 4'));
+        $this->assertStringContainsString('insufficient stock', $this->say($channel, 'QTY 1 4'));
         $this->assertSame(2, CartItem::sum('quantity'));
     }
 
