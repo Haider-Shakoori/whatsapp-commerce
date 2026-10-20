@@ -21,8 +21,8 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-        Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
-        Route::post('/products', [ProductController::class, 'store'])->name('products.store');
-        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::get('/products/create', [ProductController::class, 'create'])->middleware('merchant.manage')->name('products.create');
+        Route::post('/products', [ProductController::class, 'store'])->middleware('merchant.manage')->name('products.store');
+        Route::post('/categories', [CategoryController::class, 'store'])->middleware('merchant.manage')->name('categories.store');
     });
 });

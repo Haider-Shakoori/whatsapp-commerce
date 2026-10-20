@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureMerchantManager;
 use App\Http\Middleware\EnsureMerchantMember;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'merchant.member' => EnsureMerchantMember::class,
+            'merchant.manage' => EnsureMerchantManager::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
