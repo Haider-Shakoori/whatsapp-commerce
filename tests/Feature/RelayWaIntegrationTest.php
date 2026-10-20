@@ -68,15 +68,19 @@ class RelayWaIntegrationTest extends TestCase
         $this->actingAs($owner)->post(route('merchant.channels.store', $merchant), [
             'display_name' => 'Cafe number', 'session_id' => $sessionId,
             'api_key' => 'rw_session_test_credential',
-            'webhook_secret' => 'webhook-secret-copy-from-relaywa-123',
         ])->assertRedirect(route('merchant.channels.index', $merchant));
 
         $channel = MessagingChannel::firstOrFail();
         $this->assertSame('connected', $channel->status);
         $this->assertSame($merchant->id, $channel->merchant_id);
         $this->assertStringNotContainsString('rw_session_test_credential', $channel->getRawOriginal('credentials'));
-        $this->assertStringNotContainsString('webhook-secret-copy', $channel->getRawOriginal('credentials'));
         Http::assertSent(fn (HttpRequest $request) => $request->hasHeader('Authorization', 'Bearer rw_session_test_credential'));
+
+        $this->actingAs($owner)->post(route('merchant.channels.webhook-secret', [$merchant, $channel]), [
+            'webhook_secret' => 'webhook-secret-copy-from-relaywa-123',
+        ])->assertRedirect();
+        $this->assertStringNotContainsString('webhook-secret-copy', $channel->fresh()->getRawOriginal('credentials'));
+        $this->assertSame('webhook-secret-copy-from-relaywa-123', $channel->fresh()->credentials['webhook_secret']);
     }
 
     public function test_merchant_cannot_reuse_session_or_delete_another_merchants_channel(): void
@@ -87,10 +91,11 @@ class RelayWaIntegrationTest extends TestCase
 
         $this->actingAs($secondUser)->post(route('merchant.channels.store', $second), [
             'display_name' => 'Hijacked', 'session_id' => $channel->external_account_id,
-            'api_key' => 'rw_session_invalid', 'webhook_secret' => 'secret-at-least-twenty-characters',
+            'api_key' => 'rw_session_invalid',
         ])->assertSessionHasErrors('session_id');
 
         $this->actingAs($secondUser)->delete(route('merchant.channels.destroy', [$second, $channel]))->assertNotFound();
+        $this->actingAs($secondUser)->post(route('merchant.channels.webhook-secret', [$second, $channel]), ['webhook_secret' => 'unauthorized-tenant-secret-123'])->assertNotFound();
         $this->actingAs($firstUser)->get(route('merchant.channels.index', $second))->assertForbidden();
         $this->assertDatabaseCount('messaging_channels', 1);
     }
