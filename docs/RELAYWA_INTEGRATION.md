@@ -35,3 +35,5 @@ The implementation was checked against the connected RelayWA repository (Haider-
 ## Deployment
 
 Do not deploy this branch to production directly. PR #1 and PR #2 remain stacked dependencies. Complete end-to-end QA with an authorized test RelayWA session and a test merchant. This repository is public; never commit secrets.
+
+Security note: rate limits are partitioned by webhook channel and sender IP, so high traffic to one merchant does not exhaust another merchant's webhook allowance. Rotating or detaching a channel's credentials requires updating/disabling its RelayWA endpoint manually.
