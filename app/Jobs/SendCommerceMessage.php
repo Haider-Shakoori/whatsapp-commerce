@@ -8,7 +8,6 @@ use App\Models\OutboundMessage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 use Throwable;
 
 class SendCommerceMessage implements ShouldQueue
@@ -20,9 +19,7 @@ class SendCommerceMessage implements ShouldQueue
 
     public int $timeout = 90;
 
-    public function __construct(public readonly int $outboundMessageId)
-    {
-    }
+    public function __construct(public readonly int $outboundMessageId) {}
 
     public function handle(MessagingTransport $transport): void
     {

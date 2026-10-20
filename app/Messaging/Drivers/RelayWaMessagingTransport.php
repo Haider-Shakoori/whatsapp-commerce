@@ -9,9 +9,7 @@ use RuntimeException;
 
 final class RelayWaMessagingTransport implements MessagingTransport
 {
-    public function __construct(private readonly RelayWaClient $client)
-    {
-    }
+    public function __construct(private readonly RelayWaClient $client) {}
 
     public function sendText(
         MessagingChannel $channel,

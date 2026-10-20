@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\SendCommerceMessage;
 use App\Messaging\CommerceOutbox;
+use App\Messaging\Contracts\MessagingTransport;
 use App\Models\InboundEvent;
 use App\Models\Merchant;
 use App\Models\MessagingChannel;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -42,7 +44,7 @@ class RelayWaIntegrationTest extends TestCase
         ]);
     }
 
-    private function signedWebhook(MessagingChannel $channel, array $event, bool $correct = true): \Illuminate\Testing\TestResponse
+    private function signedWebhook(MessagingChannel $channel, array $event, bool $correct = true): TestResponse
     {
         $body = json_encode($event, JSON_THROW_ON_ERROR);
         $timestamp = (string) time();
@@ -182,7 +184,7 @@ class RelayWaIntegrationTest extends TestCase
 
         $message = app(CommerceOutbox::class)->queueText($merchant, $channel, '+93700000000', 'Hello', 'test-uncertain');
         $this->assertDatabaseHas('outbound_messages', ['id' => $message->id, 'status' => 'uncertain', 'attempts' => 1]);
-        (new SendCommerceMessage($message->id))->handle(app(\App\Messaging\Contracts\MessagingTransport::class));
+        (new SendCommerceMessage($message->id))->handle(app(MessagingTransport::class));
         Http::assertSentCount(1);
     }
 
