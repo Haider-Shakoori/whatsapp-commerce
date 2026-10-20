@@ -5,8 +5,8 @@ namespace App\Providers;
 use App\Messaging\Contracts\MessagingTransport;
 use App\Messaging\Drivers\DisabledMessagingTransport;
 use App\Messaging\Drivers\RelayWaMessagingTransport;
-use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
