@@ -6,9 +6,11 @@ Global multi-tenant, WhatsApp-first commerce SaaS. The commerce database owns me
 
 - **Batch 01:** Laravel 12 foundation, owner registration, merchant membership and roles, categories, tenant-guarded products, order/messaging schema and CI tests.
 - **Batch 02 (branch feat/batch-02-catalog):** Product editing, images, variants, restaurant modifier groups, audited stock adjustments, human-friendly currency-aware prices and CSV import. All business operations remain tenant-scoped.
-- **Not yet active:** WhatsApp publishing, inbound order conversations, checkout, real payment processing, subscriptions, customer application.
+- **Batch 03:** RelayWA verified session mapping, secure signed inbound webhooks, encrypted credentials, message outbox and health monitoring.
+- **Batch 04 (branch feat/batch-04-chat-menu):** Merchant-controlled text-based WhatsApp menu, category and product browsing, variants/extras, pagination, opt-out and event deduplication.
+- **Not yet active:** Real payment processing, interactive photo messages, native WhatsApp catalog, conversational carts/orders, subscriptions and customer checkout.
 
-Batch 02 is stacked on Batch 01 while PR #1 remains unmerged. Merge Batch 01 first, then retarget Batch 02 to main.
+Development PRs are currently stacked: PR #1 → #2 → #3 → #4. Merge in this order and rerun CI before deployment.
 
 ## Local development
 
@@ -17,7 +19,7 @@ Requires PHP 8.2+ with SQLite/MySQL support, Composer and the usual Laravel exte
 \`\`\`bash
 git clone https://github.com/Haider-Shakoori/whatsapp-commerce.git
 cd whatsapp-commerce
-git switch feat/batch-02-catalog
+git switch feat/batch-04-chat-menu
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -62,3 +64,8 @@ GitHub Actions performs Composer install, application bootstrap, PHPUnit feature
 ## RelayWA integration (Batch 03)
 
 Batch 03 adds a two-step existing-session onboarding flow, per-merchant encrypted credentials, signed webhook ingestion with replay protection, outbox idempotency and safe delivery states. The adapter is DISABLED by default. See docs/RELAYWA_INTEGRATION.md for details. PR #3 is stacked on PR #2 and is not a production deployment.
+
+
+## Chat catalog (Batch 04)
+
+The merchant can enable or disable an automated text menu in WhatsApp connections after configuring a signed RelayWA webhook. Customers can send MENU/HI/START, select a category or product using a number, paginate with NEXT/PREV and navigate using BACK. STOP pauses automated replies until START is sent again. The global messaging driver remains disabled by default, and this branch has not been tested against a live WhatsApp number. For setup and limitations see [Chat Menu](docs/CHAT_MENU.md).

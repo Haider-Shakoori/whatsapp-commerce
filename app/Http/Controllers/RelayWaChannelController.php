@@ -80,6 +80,26 @@ class RelayWaChannelController extends Controller
         return back()->with('status', 'Webhook signing secret saved. RelayWA webhooks can now be verified.');
     }
 
+    public function setMenuEnabled(Request $request, Merchant $merchant, MessagingChannel $channel): RedirectResponse
+    {
+        $channel = $merchant->messagingChannels()->whereKey($channel->id)->firstOrFail();
+        abort_unless($channel->provider === 'relaywa', 404);
+        $data = $request->validate(['menu_enabled' => ['required', 'boolean']]);
+
+        if ((bool) $data['menu_enabled']
+            && (empty($channel->credentials['webhook_secret'])
+                || empty($channel->credentials['api_key']))) {
+            throw ValidationException::withMessages([
+                'menu_enabled' => 'Configure a RelayWA API key and webhook signing secret before enabling the menu.',
+            ]);
+        }
+
+        // Global messaging driver remains disabled until the operator completes testing.
+        $channel->update(['menu_enabled' => (bool) $data['menu_enabled']]);
+
+        return back()->with('status', $channel->menu_enabled ? 'Chat menu enabled for this channel.' : 'Chat menu disabled.');
+    }
+
     public function destroy(Merchant $merchant, MessagingChannel $channel): RedirectResponse
     {
         $channel = $merchant->messagingChannels()->whereKey($channel->id)->firstOrFail();
