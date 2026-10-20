@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'WhatsApp Commerce') · WhatsApp Commerce</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/catalog.css') }}">
 </head>
 <body>
 <header><nav class="nav" aria-label="Main">
