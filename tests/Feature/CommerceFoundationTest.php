@@ -3,9 +3,8 @@
 namespace Tests\Feature;
 
 use App\Messaging\Contracts\MessagingTransport;
-use App\Models\Category;
 use App\Models\Merchant;
-use App\Models\Product;
+use App\Models\MessagingChannel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LogicException;
@@ -93,7 +92,7 @@ class CommerceFoundationTest extends TestCase
     {
         $this->expectException(LogicException::class);
         $this->app->make(MessagingTransport::class)
-            ->sendText(new \App\Models\MessagingChannel, '+10000000000', 'hello');
+            ->sendText(new MessagingChannel, '+10000000000', 'hello');
     }
 
     private function owner(string $slug): array
