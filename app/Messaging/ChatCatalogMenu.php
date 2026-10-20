@@ -233,7 +233,7 @@ final class ChatCatalogMenu
 
     private function short(string $value, int $max): string
     {
-        $value = trim(preg_replace('/\s+/u', ' ', $value) ?? '');
+        $value = trim(preg_replace('/[ \t]+/u', ' ', $value) ?? '');
         return mb_strlen($value) <= $max ? $value : mb_substr($value, 0, $max - 1).'…';
     }
 }

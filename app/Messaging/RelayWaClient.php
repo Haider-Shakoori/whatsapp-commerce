@@ -27,6 +27,33 @@ final class RelayWaClient
         return $data;
     }
 
+    /**
+     * The RelayWA webhook carries the inbound database messageId but not its text.
+     * Fetch through the documented session-scoped messages.read endpoint.
+     */
+    public function inboundMessage(MessagingChannel $channel, string $messageId): array
+    {
+        if (! preg_match('/^[a-f0-9-]{36}$/iD', $messageId)) {
+            throw new RuntimeException('Invalid inbound RelayWA message identifier.');
+        }
+
+        $response = $this->request($channel, 'GET',
+            'v1/sessions/'.$channel->external_account_id.'/messages/'.$messageId);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('RelayWA inbound message lookup failed (HTTP '.$response->status().').');
+        }
+
+        $message = $response->json('data', $response->json());
+        if (! is_array($message)
+            || ($message['id'] ?? null) !== $messageId
+            || ($message['session_id'] ?? null) !== $channel->external_account_id) {
+            throw new RuntimeException('RelayWA returned an unexpected inbound message.');
+        }
+
+        return $message;
+    }
+
     public function sendText(MessagingChannel $channel, string $recipient, string $text, string $idempotencyKey): string
     {
         try {
