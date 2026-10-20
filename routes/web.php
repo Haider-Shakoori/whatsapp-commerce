@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProductModifierController;
 use App\Http\Controllers\ProductVariantController;
+use App\Http\Controllers\RelayWaChannelController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -26,8 +27,11 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/channels', [RelayWaChannelController::class, 'index'])->middleware('merchant.manage')->name('channels.index');
 
         Route::middleware('merchant.manage')->group(function () {
+            Route::post('/channels', [RelayWaChannelController::class, 'store'])->name('channels.store');
+            Route::delete('/channels/{channel}', [RelayWaChannelController::class, 'destroy'])->name('channels.destroy');
             Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
             Route::post('/products', [ProductController::class, 'store'])->name('products.store');
             Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
