@@ -14,7 +14,7 @@
         @foreach($categories as $category)<option value="{{ $category->id }}" @selected((string) old('category_id', $product->category_id) === (string) $category->id)>{{ $category->name }}</option>@endforeach</select></div>
         <div class="field"><label for="sku">SKU</label><input id="sku" name="sku" value="{{ old('sku', $product->sku) }}"></div>
         <div class="field"><label for="description">Description</label><textarea id="description" name="description" rows="3">{{ old('description', $product->description) }}</textarea></div>
-        <div class="field"><label for="price">Price ({{ $merchant->currency }})</label><input id="price" name="price" inputmode="decimal" value="{{ old('price', \App\Support\Money::format($product->price_minor, $merchant->currency)) === null ? '' : old('price', substr(\App\Support\Money::format($product->price_minor, $merchant->currency), 0, -4)) }}" required><small class="muted">Enter price without currency suffix or thousands separators.</small></div>
+        <div class="field"><label for="price">Price ({{ $merchant->currency }})</label><input id="price" name="price" inputmode="decimal" value="{{ old('price', \App\Support\Money::forInput($product->price_minor, $merchant->currency)) }}" required><small class="muted">Enter price without currency suffix or thousands separators.</small></div>
         <input type="hidden" name="is_active" value="0">
         <div class="field"><label><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $product->is_active ? '1' : '0') === '1')> Available for sale</label></div>
         <button class="btn" type="submit">Save changes</button>

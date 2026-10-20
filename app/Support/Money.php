@@ -38,15 +38,22 @@ final class Money
         return $negative ? -$minor : $minor;
     }
 
-    public static function format(int $minor, string $currency): string
+    public static function forInput(int $minor, string $currency): string
     {
         $places = self::decimals($currency);
         $factor = 10 ** $places;
         $negative = $minor < 0 ? '-' : '';
         $minor = abs($minor);
-        $whole = number_format(intdiv($minor, $factor), 0, '.', ',');
         $fraction = $places ? '.'.str_pad((string) ($minor % $factor), $places, '0', STR_PAD_LEFT) : '';
 
-        return $negative.$whole.$fraction.' '.strtoupper($currency);
+        return $negative.intdiv($minor, $factor).$fraction;
+    }
+
+    public static function format(int $minor, string $currency): string
+    {
+        $parts = explode('.', self::forInput($minor, $currency), 2);
+        $parts[0] = number_format((int) $parts[0], 0, '.', ',');
+
+        return implode('.', $parts).' '.strtoupper($currency);
     }
 }

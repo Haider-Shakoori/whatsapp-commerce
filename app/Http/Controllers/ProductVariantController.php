@@ -17,6 +17,9 @@ class ProductVariantController extends Controller
     public function store(Request $request, Merchant $merchant, Product $product): RedirectResponse
     {
         $product = $merchant->products()->whereKey($product->id)->firstOrFail();
+        if ($request->filled('sku')) {
+            $request->merge(['sku' => strtoupper(trim($request->input('sku')))]);
+        }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'sku' => ['nullable', 'string', 'max:120', Rule::unique('product_variants')->where('merchant_id', $merchant->id)],

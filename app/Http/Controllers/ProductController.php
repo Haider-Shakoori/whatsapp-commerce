@@ -48,8 +48,8 @@ class ProductController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        return redirect()->route('merchant.products.edit', [$merchant, $product])
-            ->with('status', 'Product saved. You can now add photos, variants and extras.');
+        return redirect()->route('merchant.products.index', $merchant)
+            ->with('status', 'Product saved. Open Edit / options to add photos, variants and extras.');
     }
 
     public function edit(Merchant $merchant, Product $product): View
@@ -86,6 +86,10 @@ class ProductController extends Controller
 
     private function validatedProduct(Request $request, Merchant $merchant, ?Product $product = null, bool $creating = true): array
     {
+        if ($request->filled('sku')) {
+            $request->merge(['sku' => strtoupper(trim($request->input('sku')))]);
+        }
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:5000'],
