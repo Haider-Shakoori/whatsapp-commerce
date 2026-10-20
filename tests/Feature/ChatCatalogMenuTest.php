@@ -49,6 +49,7 @@ class ChatCatalogMenuTest extends TestCase
                     return Http::response($msg);
                 }
             }
+
             return Http::response(['error' => 'missing'], 404);
         });
 
@@ -69,6 +70,7 @@ class ChatCatalogMenuTest extends TestCase
         $body = json_encode($payload, JSON_THROW_ON_ERROR);
         $time = (string) time();
         $signature = 'sha256='.hash_hmac('sha256', $time.'.'.$body, $channel->credentials['webhook_secret']);
+
         return $this->call('POST', route('api.relaywa.webhook', ['publicId' => $channel->public_id]), [], [], [],
             ['CONTENT_TYPE' => 'application/json',
                 'HTTP_X_RELAYWA_TIMESTAMP' => $time, 'HTTP_X_RELAYWA_SIGNATURE' => $signature], $body);
