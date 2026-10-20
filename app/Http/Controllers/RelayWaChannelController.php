@@ -59,7 +59,7 @@ class RelayWaChannelController extends Controller
             'public_id' => (string) Str::uuid(),
             'external_account_id' => $data['session_id'],
             'display_name' => $data['display_name'],
-            'credentials' => ['api_key' => $data['api_key'], 'webhook_secret' => $data['webhook_secret']],
+            'credentials' => ['api_key' => $data['api_key']],
             'status' => $status,
             'status_checked_at' => now(),
         ]);
