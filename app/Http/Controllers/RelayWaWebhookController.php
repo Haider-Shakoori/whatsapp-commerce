@@ -35,10 +35,16 @@ class RelayWaWebhookController extends Controller
             return response()->json(['error' => 'Invalid event'], 422);
         }
 
+        // Some RelayWA retries have different webhook envelope IDs but reference
+        // the same stored inbound WhatsApp message. Use the message ID when valid.
+        $messageId = $event['type'] === 'message.received' ? ($event['data']['messageId'] ?? null) : null;
+        $identity = is_string($messageId) && preg_match('/^[a-f0-9-]{36}$/iD', $messageId)
+            ? 'wa-message:'.strtolower($messageId) : (string) $event['id'];
+
         $inbox = InboundEvent::firstOrCreate(
             [
                 'messaging_channel_id' => $channel->id,
-                'provider_event_id' => (string) $event['id'],
+                'provider_event_id' => $identity,
             ],
             [
                 'merchant_id' => $channel->merchant_id,

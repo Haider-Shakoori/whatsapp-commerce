@@ -8,9 +8,10 @@ Global multi-tenant, WhatsApp-first commerce SaaS. The commerce database owns me
 - **Batch 02 (branch feat/batch-02-catalog):** Product editing, images, variants, restaurant modifier groups, audited stock adjustments, human-friendly currency-aware prices and CSV import. All business operations remain tenant-scoped.
 - **Batch 03:** RelayWA verified session mapping, secure signed inbound webhooks, encrypted credentials, message outbox and health monitoring.
 - **Batch 04 (branch feat/batch-04-chat-menu):** Merchant-controlled text-based WhatsApp menu, category and product browsing, variants/extras, pagination, opt-out and event deduplication.
-- **Not yet active:** Real payment processing, interactive photo messages, native WhatsApp catalog, conversational carts/orders, subscriptions and customer checkout.
+- **Batch 05 (branch feat/batch-05-conversational-cart):** Persistent chat shopping carts, variant and modifier selections, quantity changes, stock checks, provisional totals, tenant isolation and replay-safe ADD commands.
+- **Not yet active:** Checkout/orders, real payment processing, photo messages, native WhatsApp catalog, subscription billing and customer checkout.
 
-Development PRs are currently stacked: PR #1 → #2 → #3 → #4. Merge in this order and rerun CI before deployment.
+Development PRs are currently stacked: PR #1 → #2 → #3 → #4 → #5. Merge in this order and rerun CI before deployment.
 
 ## Local development
 
@@ -19,7 +20,7 @@ Requires PHP 8.2+ with SQLite/MySQL support, Composer and the usual Laravel exte
 \`\`\`bash
 git clone https://github.com/Haider-Shakoori/whatsapp-commerce.git
 cd whatsapp-commerce
-git switch feat/batch-04-chat-menu
+git switch feat/batch-05-conversational-cart
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -50,9 +51,9 @@ Prices are stored as integer minor units. The dashboard accepts normal decimal p
 
 - Shared MySQL tenancy using merchant-scoped reads/writes; merchant members see only their workspace and only owner/manager roles can modify catalogs.
 - Catalog IDs are checked against the active merchant before modifying product images, variants, modifiers, stock or import rows.
-- Inbound message deduplication and outbound idempotency schema exist, but no messaging transport is enabled.
+- Signed RelayWA webhook, deduplicated inbound messages and an idempotent outbound queue are implemented; the global outbound transport is disabled by default.
 - Images are limited to validated JPEG/PNG/WebP 4 MB uploads; never trust original filenames for storage paths.
-- No live payments, session credentials, or WhatsApp connections are configured.
+- No live payments or WhatsApp sessions were connected; secure merchant credential configuration exists for future test integration.
 
 This repository was public at the time the foundation began. Consider marking it private before adding proprietary business logic.
 
@@ -69,3 +70,8 @@ Batch 03 adds a two-step existing-session onboarding flow, per-merchant encrypte
 ## Chat catalog (Batch 04)
 
 The merchant can enable or disable an automated text menu in WhatsApp connections after configuring a signed RelayWA webhook. Customers can send MENU/HI/START, select a category or product using a number, paginate with NEXT/PREV and navigate using BACK. STOP pauses automated replies until START is sent again. The global messaging driver remains disabled by default, and this branch has not been tested against a live WhatsApp number. For setup and limitations see [Chat Menu](docs/CHAT_MENU.md).
+
+
+## Customer cart (Batch 05)
+
+Customers open the chat MENU, view a product and reply ADD or ADD 2, then select sizes/colors and any required/optional toppings. CART displays subtotal; QTY, REMOVE, CLEAR and CLEAR YES maintain the basket. CHECKOUT is intentionally disabled. Cart prices are provisional, stock is not reserved, and price and stock must be reverified at actual checkout. See [Batch 05 cart documentation](docs/CART.md).

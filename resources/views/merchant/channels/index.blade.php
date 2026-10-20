@@ -20,7 +20,7 @@
         </form>
         <div class="card" style="margin:16px 0;background:#f6faf8">
             <h3>Conversational product menu</h3>
-            <p class="muted">Customers can message MENU, browse categories and products, and see prices, sizes and toppings. No orders or payments are processed in Batch 4.</p>
+            <p class="muted">Customers can message MENU, browse categories, select variants and toppings, then add products to a persistent CART. Checkout and payment are not active.</p>
             <p><strong>Menu:</strong> {{ $channel->menu_enabled ? 'Enabled' : 'Disabled' }} · Global messaging transport: {{ config('commerce.messaging_driver') === 'relaywa' ? 'RelayWA' : 'Disabled for safety' }}</p>
             <form method="post" action="{{ route('merchant.channels.menu', [$merchant, $channel]) }}">
                 @csrf

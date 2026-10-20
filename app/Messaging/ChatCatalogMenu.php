@@ -15,7 +15,7 @@ final class ChatCatalogMenu
 
     private const CATEGORY_PAGE_SIZE = 8;
 
-    public function __construct(private readonly CommerceOutbox $outbox) {}
+    public function __construct(private readonly CommerceOutbox $outbox, private readonly CartConversation $cart) {}
 
     /**
      * Invoked with the inbound event row locked in a database transaction.
@@ -64,13 +64,19 @@ final class ChatCatalogMenu
         }
 
         if ($command === 'STOP') {
+            $this->cart->reset($session);
+            $session->selected_product_id = null;
             $session->update(['opted_out' => true, 'choice_ids' => []]);
             $reply = 'Menu replies are stopped. Send START to reopen the shopping menu.';
         } elseif ($session->opted_out && $command !== 'START') {
             return;
         } elseif ($opens) {
+            $this->cart->reset($session);
+            $session->selected_product_id = null;
             $session->update(['opted_out' => false, 'screen' => 'categories', 'page' => 1, 'category_id' => null]);
             $reply = $this->categories($channel, $session, true);
+        } elseif (($cartReply = $this->cart->respond($channel, $session, $command)) !== null) {
+            $reply = $cartReply;
         } elseif ($command === 'NEXT' || $command === 'PREV') {
             $session->page = max(1, $session->page + ($command === 'NEXT' ? 1 : -1));
             $reply = $session->screen === 'products'
@@ -79,9 +85,11 @@ final class ChatCatalogMenu
         } elseif (in_array($command, ['0', 'BACK'], true)) {
             if ($session->screen === 'detail') {
                 $session->screen = 'products';
+                $session->selected_product_id = null;
                 $reply = $this->products($channel, $session);
             } else {
                 $session->screen = 'categories';
+                $session->selected_product_id = null;
                 $session->page = 1;
                 $session->category_id = null;
                 $reply = $this->categories($channel, $session);
@@ -98,6 +106,7 @@ final class ChatCatalogMenu
                     $reply = $this->categories($channel, $session);
                 } else {
                     $session->screen = 'products';
+                    $session->selected_product_id = null;
                     $session->page = 1;
                     $session->category_id = $category?->id;
                     $reply = $this->products($channel, $session);
@@ -109,6 +118,7 @@ final class ChatCatalogMenu
                     $reply = $this->products($channel, $session);
                 } else {
                     $session->screen = 'detail';
+                    $session->selected_product_id = $product->id;
                     $session->choice_ids = [];
                     $reply = $this->detail($product);
                 }
@@ -177,7 +187,7 @@ final class ChatCatalogMenu
             .$this->short($p->name, 55).' — '.Money::format($p->price_minor, $p->currency))->implode("\n");
 
         return '🛒 '.$this->short($label, 75)." (page {$session->page}/{$pages}):\n".$rows
-            ."\n\nReply with a number for details, NEXT, PREV or BACK.\nOrdering is coming soon.";
+            ."\n\nReply with a number for details, NEXT, PREV or BACK.\nChoose a product number for details, then ADD to your cart.";
     }
 
     private function detail(Product $product): string
@@ -210,7 +220,7 @@ final class ChatCatalogMenu
             }
         }
 
-        return $this->short($message, 3700)."\n\nReply BACK for products or MENU for categories.\nCheckout is not available yet.";
+        return $this->short($message, 3700)."\n\nReply ADD or ADD 2 to add to cart, BACK for products or MENU for categories.\nCheckout is not available yet.";
     }
 
     private function eligibleProducts(MessagingChannel $channel, ?int $categoryId): Builder
