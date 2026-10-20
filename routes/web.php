@@ -3,7 +3,12 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductImageController;
+use App\Http\Controllers\ProductImportController;
+use App\Http\Controllers\ProductModifierController;
+use App\Http\Controllers\ProductVariantController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -21,8 +26,21 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-        Route::get('/products/create', [ProductController::class, 'create'])->middleware('merchant.manage')->name('products.create');
-        Route::post('/products', [ProductController::class, 'store'])->middleware('merchant.manage')->name('products.store');
-        Route::post('/categories', [CategoryController::class, 'store'])->middleware('merchant.manage')->name('categories.store');
+
+        Route::middleware('merchant.manage')->group(function () {
+            Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+            Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+            Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+            Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+            Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::post('/products/import', [ProductImportController::class, 'store'])->name('products.import');
+            Route::post('/products/{product}/images', [ProductImageController::class, 'store'])->name('products.images.store');
+            Route::delete('/products/{product}/images/{image}', [ProductImageController::class, 'destroy'])->name('products.images.destroy');
+            Route::post('/products/{product}/variants', [ProductVariantController::class, 'store'])->name('products.variants.store');
+            Route::delete('/products/{product}/variants/{variant}', [ProductVariantController::class, 'destroy'])->name('products.variants.destroy');
+            Route::post('/products/{product}/modifiers', [ProductModifierController::class, 'store'])->name('products.modifiers.store');
+            Route::delete('/products/{product}/modifiers/{group}', [ProductModifierController::class, 'destroy'])->name('products.modifiers.destroy');
+            Route::post('/products/{product}/stock', [InventoryController::class, 'adjust'])->name('products.stock.adjust');
+        });
     });
 });
