@@ -41,7 +41,7 @@ class ProcessRelayWaEvent implements ShouldQueue
             }
         }
 
-        DB::transaction(function () use ($menu, $payload, $type, $message): void {
+        DB::transaction(function () use ($menu, $type, $message): void {
             // Lock the inbox row: no duplicate bot state mutations on job retries.
             $event = InboundEvent::with('channel.merchant')->lockForUpdate()->find($this->eventId);
             if (! $event || $event->processed_at || ! $event->channel) {

@@ -176,7 +176,7 @@ final class ChatCatalogMenu
         $rows = $products->map(fn (Product $p, int $i) => ($i + 1).'. '
             .$this->short($p->name, 55).' — '.Money::format($p->price_minor, $p->currency))->implode("\n");
 
-        return "🛒 ".$this->short($label, 75)." (page {$session->page}/{$pages}):\n".$rows
+        return '🛒 '.$this->short($label, 75)." (page {$session->page}/{$pages}):\n".$rows
             ."\n\nReply with a number for details, NEXT, PREV or BACK.\nOrdering is coming soon.";
     }
 
@@ -234,6 +234,7 @@ final class ChatCatalogMenu
     private function short(string $value, int $max): string
     {
         $value = trim(preg_replace('/[ \t]+/u', ' ', $value) ?? '');
+
         return mb_strlen($value) <= $max ? $value : mb_substr($value, 0, $max - 1).'…';
     }
 }
