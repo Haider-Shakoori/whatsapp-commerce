@@ -10,7 +10,6 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShoppingCart;
 use App\Support\Money;
-use Illuminate\Support\Collection;
 
 final class ShoppingCartService
 {
