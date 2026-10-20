@@ -29,7 +29,6 @@ class RelayWaChannelController extends Controller
             'display_name' => ['required', 'string', 'max:120'],
             'session_id' => ['required', 'uuid', Rule::unique('messaging_channels', 'external_account_id')->where('provider', 'relaywa')],
             'api_key' => ['required', 'string', 'starts_with:rw_session_', 'max:500'],
-            'webhook_secret' => ['required', 'string', 'min:20', 'max:255'],
         ]);
 
         // Use only the RelayWA server origin configured by our operator.
@@ -38,7 +37,7 @@ class RelayWaChannelController extends Controller
             'merchant_id' => $merchant->id,
             'provider' => 'relaywa',
             'external_account_id' => $data['session_id'],
-            'credentials' => ['api_key' => $data['api_key'], 'webhook_secret' => $data['webhook_secret']],
+            'credentials' => ['api_key' => $data['api_key']],
         ]);
 
         try {
@@ -66,7 +65,19 @@ class RelayWaChannelController extends Controller
         ]);
 
         return redirect()->route('merchant.channels.index', $merchant)
-            ->with('status', 'RelayWA session verified. Register the signed webhook endpoint in RelayWA to receive events.');
+            ->with('status', 'RelayWA session verified. Create a RelayWA webhook with the displayed URL, then save its signing secret below.');
+    }
+
+    public function setWebhookSecret(Request $request, Merchant $merchant, MessagingChannel $channel): RedirectResponse
+    {
+        $channel = $merchant->messagingChannels()->whereKey($channel->id)->firstOrFail();
+        abort_unless($channel->provider === 'relaywa', 404);
+        $data = $request->validate(['webhook_secret' => ['required', 'string', 'min:20', 'max:255']]);
+        $credentials = $channel->credentials ?? [];
+        $credentials['webhook_secret'] = $data['webhook_secret'];
+        $channel->update(['credentials' => $credentials]);
+
+        return back()->with('status', 'Webhook signing secret saved. RelayWA webhooks can now be verified.');
     }
 
     public function destroy(Merchant $merchant, MessagingChannel $channel): RedirectResponse
