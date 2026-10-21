@@ -37,7 +37,9 @@ jobs:
       DB_DATABASE: commerce_ci
       DB_USERNAME: commerce
       DB_PASSWORD: commerce_ci_test_only
-      QUEUE_CONNECTION: database
+      # The existing feature suite relies on synchronous job execution.
+      # Check production database-queue settings separately below.
+      QUEUE_CONNECTION: sync
       DB_QUEUE_RETRY_AFTER: "180"
       COMMERCE_MESSAGING_DRIVER: disabled
     steps:
@@ -57,7 +59,7 @@ jobs:
         run: |
           php artisan migrate:fresh --force
           php artisan migrate:status
-          php artisan commerce:release:check
+          QUEUE_CONNECTION=database php artisan commerce:release:check
       - name: Full integration regression suite on MySQL
         run: php artisan test --no-ansi
       - name: Validate schema rollback and recreation

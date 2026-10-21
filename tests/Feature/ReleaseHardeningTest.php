@@ -112,7 +112,7 @@ class ReleaseHardeningTest extends TestCase
             'status' => 'accepted',
             'idempotency_key' => 'already-accepted',
         ]);
-        DB::table('outbound_messages')->whereKey($second->id)
+        DB::table('outbound_messages')->where('id', $second->id)
             ->update(['updated_at' => now()->subMinutes(120)]);
 
         $this->artisan('commerce:outbox:mark-uncertain')->assertSuccessful();
