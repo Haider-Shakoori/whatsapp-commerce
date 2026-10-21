@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Merchant;
+use App\Saas\MerchantEntitlements;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ use InvalidArgumentException;
 
 class ProductImportController extends Controller
 {
-    public function store(Request $request, Merchant $merchant): RedirectResponse
+    public function store(Request $request, Merchant $merchant, MerchantEntitlements $entitlements): RedirectResponse
     {
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
         $stream = fopen($request->file('file')->getRealPath(), 'rb');
@@ -83,7 +85,10 @@ class ProductImportController extends Controller
         }
 
         // All rows are validated before the transaction; a failure never leaves a partial import.
-        [$created, $updated] = DB::transaction(function () use ($records, $merchant): array {
+        try {
+            [$created, $updated] = DB::transaction(function () use ($records, $merchant, $entitlements): array {
+                $existing = $merchant->products()->whereIn('sku', array_column($records, 'sku'))->pluck('sku')->all();
+                $entitlements->assertCapacity($merchant, 'products', count($records) - count($existing));
             $created = 0;
             $updated = 0;
             foreach ($records as $row) {
@@ -126,7 +131,10 @@ class ProductImportController extends Controller
             }
 
             return [$created, $updated];
-        });
+            });
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['file' => $e->getMessage()]);
+        }
 
         return back()->with('status', "CSV import finished: {$created} created, {$updated} updated. Stock on existing SKUs was preserved.");
     }

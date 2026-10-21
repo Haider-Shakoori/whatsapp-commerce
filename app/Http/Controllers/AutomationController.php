@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AutomationRule;
 use App\Models\AutomationSetting;
 use App\Models\Merchant;
+use App\Saas\MerchantEntitlements;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,7 +27,7 @@ class AutomationController extends Controller
         ]);
     }
 
-    public function update(Request $request, Merchant $merchant): RedirectResponse
+    public function update(Request $request, Merchant $merchant, MerchantEntitlements $entitlements): RedirectResponse
     {
         $data = $request->validate([
             'enabled' => ['required', 'boolean'],
@@ -64,6 +66,17 @@ class AutomationController extends Controller
             throw ValidationException::withMessages([
                 'ai_consent' => 'Confirm that merchant-selected customer text may be processed by the AI provider.',
             ]);
+        }
+
+        try {
+            if ((bool) $data['enabled']) {
+                $entitlements->assertFeature($merchant, 'automation');
+            }
+            if ((bool) $data['ai_drafts_enabled']) {
+                $entitlements->assertFeature($merchant, 'ai_drafts');
+            }
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['enabled' => $e->getMessage()]);
         }
 
         AutomationSetting::updateOrCreate(['merchant_id' => $merchant->id], [

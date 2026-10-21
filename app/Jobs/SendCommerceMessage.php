@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Messaging\Contracts\MessagingTransport;
 use App\Messaging\Exceptions\DeliveryUncertain;
 use App\Models\OutboundMessage;
+use App\Saas\MerchantEntitlements;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ class SendCommerceMessage implements ShouldQueue
 
     public function __construct(public readonly int $outboundMessageId) {}
 
-    public function handle(MessagingTransport $transport): void
+    public function handle(MessagingTransport $transport, MerchantEntitlements $entitlements): void
     {
         $claimed = DB::transaction(function (): ?OutboundMessage {
             $message = OutboundMessage::query()->lockForUpdate()->find($this->outboundMessageId);
@@ -52,6 +53,7 @@ class SendCommerceMessage implements ShouldQueue
         }
 
         try {
+            $entitlements->current($channel->merchant);
             $providerId = $transport->sendText(
                 $channel,
                 $claimed->recipient,

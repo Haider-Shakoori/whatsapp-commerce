@@ -7,6 +7,8 @@ use App\Models\AutomationFollowup;
 use App\Models\AutomationSetting;
 use App\Models\Conversation;
 use App\Models\Merchant;
+use App\Saas\MerchantEntitlements;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -14,7 +16,7 @@ use RuntimeException;
 
 class ConversationAutomationController extends Controller
 {
-    public function schedule(Request $request, Merchant $merchant, Conversation $conversation): RedirectResponse
+    public function schedule(Request $request, Merchant $merchant, Conversation $conversation, MerchantEntitlements $entitlements): RedirectResponse
     {
         $conversation = $merchant->conversations()->with('customer')
             ->whereKey($conversation->id)->firstOrFail();
@@ -25,6 +27,11 @@ class ConversationAutomationController extends Controller
             'delay_hours' => ['required', 'integer', 'between:1,168'],
             'consent_confirmed' => ['required', 'accepted'],
         ]);
+        try {
+            $entitlements->assertFeature($merchant, 'automation');
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['body' => $e->getMessage()]);
+        }
         $setting = AutomationSetting::where('merchant_id', $merchant->id)->first();
         if (! $setting?->enabled || ! $setting->followups_enabled
             || $conversation->status !== 'open' || $conversation->customer->automation_opted_out) {
@@ -64,12 +71,17 @@ class ConversationAutomationController extends Controller
         return back()->with('status', 'Pending follow-up cancelled if not already queued.');
     }
 
-    public function draft(Request $request, Merchant $merchant, Conversation $conversation, AiDraftAssistant $assistant): RedirectResponse
+    public function draft(Request $request, Merchant $merchant, Conversation $conversation, AiDraftAssistant $assistant, MerchantEntitlements $entitlements): RedirectResponse
     {
         $conversation = $merchant->conversations()->with('customer')
             ->whereKey($conversation->id)->firstOrFail();
         abort_unless($this->canHandle($request, $merchant, $conversation), 403);
 
+        try {
+            $entitlements->assertFeature($merchant, 'ai_drafts');
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['ai' => $e->getMessage()]);
+        }
         $setting = AutomationSetting::where('merchant_id', $merchant->id)->first();
         if (! $setting?->ai_drafts_enabled || $conversation->status !== 'open') {
             throw ValidationException::withMessages(['ai' => 'AI drafting is not enabled for this merchant or conversation.']);

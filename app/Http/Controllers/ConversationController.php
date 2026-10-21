@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Messaging\CommerceOutbox;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use App\Models\Conversation;
 use App\Models\Merchant;
 use Illuminate\Http\RedirectResponse;
@@ -87,10 +88,14 @@ class ConversationController extends Controller
         // Dedicated key per intentional submit; no repeated send on accidental
         // double-submit within one request, and the outbox never retries unknown sends.
         $id = (string) Str::uuid();
-        $outbox->queueText(
-            $merchant, $conversation->channel, $conversation->customer->phone,
-            $data['body'], 'staff-'.$conversation->id.'-'.$id
-        );
+        try {
+            $outbox->queueText(
+                $merchant, $conversation->channel, $conversation->customer->phone,
+                $data['body'], 'staff-'.$conversation->id.'-'.$id
+            );
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['body' => $e->getMessage()]);
+        }
 
         return back()->with('status', 'Reply queued. Check delivery status in the thread.');
     }

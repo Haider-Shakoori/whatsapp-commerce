@@ -83,7 +83,7 @@ return new class extends Migration
             [
                 'code' => 'trial', 'name' => 'Evaluation', 'description' => '14-day evaluation with bounded resources',
                 'currency' => 'USD', 'price_minor' => null, 'interval_months' => 1, 'trial_days' => 14,
-                'max_channels' => 2, 'max_team_members' => 5, 'max_products' => 100,
+                'max_channels' => 2, 'max_team_members' => 5, 'max_products' => 1000,
                 'max_monthly_outbound' => 250, 'allow_automation' => true, 'allow_ai_drafts' => true,
                 'is_active' => true, 'created_at' => $now, 'updated_at' => $now,
             ],

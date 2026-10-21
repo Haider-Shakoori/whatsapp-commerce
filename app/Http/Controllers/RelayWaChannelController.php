@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Messaging\RelayWaClient;
+use App\Saas\MerchantEntitlements;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use App\Models\Merchant;
 use App\Models\MessagingChannel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +26,7 @@ class RelayWaChannelController extends Controller
         ]);
     }
 
-    public function store(Request $request, Merchant $merchant, RelayWaClient $client): RedirectResponse
+    public function store(Request $request, Merchant $merchant, RelayWaClient $client, MerchantEntitlements $entitlements): RedirectResponse
     {
         $data = $request->validate([
             'display_name' => ['required', 'string', 'max:120'],
@@ -54,7 +57,10 @@ class RelayWaChannelController extends Controller
             $status = 'error';
         }
 
-        $merchant->messagingChannels()->create([
+        try {
+            DB::transaction(function () use ($merchant, $entitlements, $data, $status): void {
+                $entitlements->assertCapacity($merchant, 'channels');
+                $merchant->messagingChannels()->create([
             'provider' => 'relaywa',
             'public_id' => (string) Str::uuid(),
             'external_account_id' => $data['session_id'],
@@ -62,7 +68,11 @@ class RelayWaChannelController extends Controller
             'credentials' => ['api_key' => $data['api_key']],
             'status' => $status,
             'status_checked_at' => now(),
-        ]);
+                ]);
+            });
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['session_id' => $e->getMessage()]);
+        }
 
         return redirect()->route('merchant.channels.index', $merchant)
             ->with('status', 'RelayWA session verified. Create a RelayWA webhook with the displayed URL, then save its signing secret below.');
