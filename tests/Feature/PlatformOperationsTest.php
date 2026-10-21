@@ -55,6 +55,7 @@ class PlatformOperationsTest extends TestCase
         $merchant->users()->attach($owner->id, ['role' => 'owner']);
 
         foreach (['platform.channels.index', 'platform.messages.index', 'platform.health.index'] as $route) {
+            auth()->logout();
             $this->get(route($route))->assertRedirect(route('login'));
             $this->actingAs($owner)->get(route($route))->assertForbidden();
         }
