@@ -75,7 +75,7 @@ final class CheckoutConversation
 
         if ($session->checkout_step === 'method') {
             if (! in_array($command, ['1', '2', 'PICKUP', 'DELIVERY'], true)) {
-                return "Choose 1 for pickup or 2 for delivery. Reply BACK to change your name.";
+                return 'Choose 1 for pickup or 2 for delivery. Reply BACK to change your name.';
             }
             $session->checkout_method = in_array($command, ['1', 'PICKUP'], true) ? 'pickup' : 'delivery';
             $session->checkout_address = null;

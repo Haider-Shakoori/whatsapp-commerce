@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Merchant;
 use App\Models\Order;
-use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
