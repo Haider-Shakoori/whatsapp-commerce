@@ -8,3 +8,5 @@ Artisan::command('commerce:status', function () {
 })->purpose('Display commerce platform status');
 
 Schedule::command('commerce:relaywa:health')->everyFiveMinutes()->withoutOverlapping();
+
+Schedule::command('commerce:payments:reconcile')->everyFifteenMinutes()->withoutOverlapping();
