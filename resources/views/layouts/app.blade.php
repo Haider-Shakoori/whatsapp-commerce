@@ -108,7 +108,7 @@
                             <p class="ws-nav-heading">{{ $group }}</p>
                             @foreach($items as $item)
                                 @php
-                                    $active = request()->routeIs($item['route']) || (str_ends_with($item['route'], '.index') && request()->routeIs(str_replace('.index', '.*', $item['route'])));
+                                    $active = request()->routeIs($item['route']) || (! in_array($item['route'], ['platform.index', 'dashboard'], true) && str_ends_with($item['route'], '.index') && request()->routeIs(str_replace('.index', '.*', $item['route'])));
                                     $destination = route($item['route'], $merchantArea ? $merchant : []);
                                 @endphp
                                 <a href="{{ $destination }}" @class(['ws-nav-link', 'is-active' => $active]) @if($active) aria-current="page" @endif>
