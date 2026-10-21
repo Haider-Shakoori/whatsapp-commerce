@@ -46,17 +46,20 @@ class StripeTestWebhookController extends Controller
                 'checkout.session.async_payment_failed', 'checkout.session.expired',
             ], true) || ($object['object'] ?? null) !== 'checkout.session') {
                 $record->update(['outcome' => 'ignored']);
+
                 return response()->json(['received' => true], 200);
             }
             $attempt = PaymentAttempt::query()->where('merchant_id', $settings->merchant_id)
                 ->where('method', 'stripe_test')->where('provider_session_id', $object['id'] ?? '')->first();
             if (! $attempt) {
                 $record->update(['outcome' => 'unmatched']);
+
                 return response()->json(['received' => true], 200);
             }
             $record->update(['payment_attempt_id' => $attempt->id]);
             $outcome = $settlement->applyStripeCheckout($attempt, $object, $event['type']);
             $record->update(['outcome' => $outcome]);
+
             return response()->json(['received' => true], 200);
         });
     }

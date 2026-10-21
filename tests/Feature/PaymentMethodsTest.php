@@ -6,6 +6,7 @@ use App\Models\Merchant;
 use App\Models\MerchantPaymentSetting;
 use App\Models\Order;
 use App\Models\PaymentAttempt;
+use App\Models\PaymentWebhookEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
@@ -217,7 +218,7 @@ class PaymentMethodsTest extends TestCase
         $order = $this->order($merchant);
         $attempt = $this->attempt($merchant, $order);
         $eventId = 'evt_recovery_after_worker_failure';
-        \App\Models\PaymentWebhookEvent::create([
+        PaymentWebhookEvent::create([
             'merchant_id' => $merchant->id,
             'provider' => 'stripe_test',
             'provider_event_id' => $eventId,

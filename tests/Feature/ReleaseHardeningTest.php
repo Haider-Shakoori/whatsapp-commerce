@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\ProcessRelayWaEvent;
 use App\Messaging\CommerceOutbox;
 use App\Messaging\RelayWaClient;
+use App\Models\InboundEvent;
 use App\Models\Merchant;
 use App\Models\OutboundMessage;
 use App\Models\User;
@@ -203,7 +204,7 @@ class ReleaseHardeningTest extends TestCase
         $this->assertDatabaseCount('inbound_events', 1);
         Queue::assertPushed(ProcessRelayWaEvent::class, 2);
 
-        \App\Models\InboundEvent::firstOrFail()->update(['processed_at' => now()]);
+        InboundEvent::firstOrFail()->update(['processed_at' => now()]);
         $this->call('POST', $url, [], [], [], $header, $payload)->assertOk();
         Queue::assertPushed(ProcessRelayWaEvent::class, 2);
     }
