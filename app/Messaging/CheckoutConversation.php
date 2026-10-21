@@ -30,7 +30,7 @@ final class CheckoutConversation
 
         if ($command === 'CHECKOUT') {
             if ($session->checkout_step) {
-                return $this->prompt($session);
+                return $this->prompt($session, $channel);
             }
             $cart = ShoppingCart::query()
                 ->where('merchant_id', $channel->merchant_id)
@@ -132,7 +132,20 @@ final class CheckoutConversation
         $session->checkout_address = null;
     }
 
-    private function prompt(ChatMenuSession $session): string
+    private function preview(MessagingChannel $channel, ChatMenuSession $session): string
+    {
+        $cart = ShoppingCart::query()->where('merchant_id', $channel->merchant_id)
+            ->where('messaging_channel_id', $channel->id)
+            ->where('customer_phone', $session->customer_phone)->first();
+        if (! $cart) {
+            return "\nCart: unavailable";
+        }
+        $subtotal = $cart->items()->get()->sum(fn ($line) => $line->quantity * $line->unit_price_minor);
+
+        return "\nProduct subtotal (provisional): ".Money::format($subtotal, $cart->currency);
+    }
+
+    private function prompt(ChatMenuSession $session, MessagingChannel $channel): string
     {
         return match ($session->checkout_step) {
             'name' => "🧾 Checkout\nPlease type your name.\nReply CANCEL at any time.",
@@ -141,7 +154,8 @@ final class CheckoutConversation
             'confirm' => "Review order:\nCustomer: {$session->checkout_customer_name}\nPhone: {$session->customer_phone}"
                 ."\nMethod: {$session->checkout_method}"
                 .($session->checkout_method === 'delivery' ? "\nAddress: {$session->checkout_address}" : '')
-                ."\nProduct subtotal is based on your saved cart; prices and stock will be rechecked when you confirm."
+                .$this->preview($channel, $session)."
+Prices and stock are rechecked when you confirm."
                 .($session->checkout_method === 'delivery'
                     ? "\nDelivery fees are not configured. The merchant must agree on any fee separately."
                     : '')

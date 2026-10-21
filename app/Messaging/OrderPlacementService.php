@@ -10,7 +10,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShoppingCart;
-use Illuminate\Support\Collection;
 
 final class OrderPlacementService
 {
