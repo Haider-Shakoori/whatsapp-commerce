@@ -52,7 +52,10 @@ class RelayWaWebhookController extends Controller
             ],
         );
 
-        if ($inbox->wasRecentlyCreated) {
+        // A previous worker can crash before marking an existing event
+        // processed. A signed retry must restore queue delivery; the worker's
+        // row lock ensures multiple copies cannot apply the message twice.
+        if ($inbox->wasRecentlyCreated || $inbox->processed_at === null) {
             ProcessRelayWaEvent::dispatch($inbox->id)->afterCommit();
         }
 

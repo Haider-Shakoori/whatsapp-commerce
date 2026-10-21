@@ -9,6 +9,7 @@ use App\Payments\PaymentSettlement;
 use App\Payments\StripeWebhookVerifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StripeTestWebhookController extends Controller
 {
@@ -27,38 +28,39 @@ class StripeTestWebhookController extends Controller
             return response()->json(['error' => 'Invalid event'], 422);
         }
 
-        $record = PaymentWebhookEvent::firstOrCreate([
-            'merchant_id' => $settings->merchant_id, 'provider' => 'stripe_test',
-            'provider_event_id' => $event['id'],
-        ], ['outcome' => 'received']);
+        // Persist the receipt and settlement in one transaction. If the
+        // settlement fails, roll back the receipt so a valid signed retry can
+        // perform it again rather than being discarded as a duplicate.
+        return DB::transaction(function () use ($settings, $event, $settlement): JsonResponse {
+            $record = PaymentWebhookEvent::firstOrCreate([
+                'merchant_id' => $settings->merchant_id, 'provider' => 'stripe_test',
+                'provider_event_id' => $event['id'],
+            ], ['outcome' => 'received']);
+            $record = PaymentWebhookEvent::whereKey($record->id)->lockForUpdate()->firstOrFail();
+            if ($record->outcome !== 'received') {
+                return response()->json(['received' => true], 200);
+            }
+            $object = $event['data']['object'];
+            if (! in_array($event['type'], [
+                'checkout.session.completed', 'checkout.session.async_payment_succeeded',
+                'checkout.session.async_payment_failed', 'checkout.session.expired',
+            ], true) || ($object['object'] ?? null) !== 'checkout.session') {
+                $record->update(['outcome' => 'ignored']);
 
-        if (! $record->wasRecentlyCreated) {
+                return response()->json(['received' => true], 200);
+            }
+            $attempt = PaymentAttempt::query()->where('merchant_id', $settings->merchant_id)
+                ->where('method', 'stripe_test')->where('provider_session_id', $object['id'] ?? '')->first();
+            if (! $attempt) {
+                $record->update(['outcome' => 'unmatched']);
+
+                return response()->json(['received' => true], 200);
+            }
+            $record->update(['payment_attempt_id' => $attempt->id]);
+            $outcome = $settlement->applyStripeCheckout($attempt, $object, $event['type']);
+            $record->update(['outcome' => $outcome]);
+
             return response()->json(['received' => true], 200);
-        }
-
-        $object = $event['data']['object'];
-        if (! in_array($event['type'], [
-            'checkout.session.completed', 'checkout.session.async_payment_succeeded',
-            'checkout.session.async_payment_failed', 'checkout.session.expired',
-        ], true) || ($object['object'] ?? null) !== 'checkout.session') {
-            $record->update(['outcome' => 'ignored']);
-
-            return response()->json(['received' => true], 200);
-        }
-
-        $attempt = PaymentAttempt::query()->where('merchant_id', $settings->merchant_id)
-            ->where('method', 'stripe_test')->where('provider_session_id', $object['id'] ?? '')->first();
-
-        if (! $attempt) {
-            $record->update(['outcome' => 'unmatched']);
-
-            return response()->json(['received' => true], 200);
-        }
-
-        $record->update(['payment_attempt_id' => $attempt->id]);
-        $outcome = $settlement->applyStripeCheckout($attempt, $object, $event['type']);
-        $record->update(['outcome' => $outcome]);
-
-        return response()->json(['received' => true], 200);
+        });
     }
 }
