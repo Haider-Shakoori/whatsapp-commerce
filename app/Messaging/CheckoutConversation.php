@@ -46,7 +46,7 @@ final class CheckoutConversation
             $session->checkout_method = null;
             $session->checkout_address = null;
 
-            return $this->prompt($session);
+            return $this->prompt($session, $channel);
         }
 
         if ($command === 'BACK') {
@@ -57,7 +57,7 @@ final class CheckoutConversation
                 default => 'name',
             };
 
-            return $this->prompt($session);
+            return $this->prompt($session, $channel);
         }
 
         if ($session->checkout_step === 'name') {
@@ -70,7 +70,7 @@ final class CheckoutConversation
             $session->checkout_customer_name = $name;
             $session->checkout_step = 'method';
 
-            return $this->prompt($session);
+            return $this->prompt($session, $channel);
         }
 
         if ($session->checkout_step === 'method') {
@@ -81,7 +81,7 @@ final class CheckoutConversation
             $session->checkout_address = null;
             $session->checkout_step = $session->checkout_method === 'delivery' ? 'address' : 'confirm';
 
-            return $this->prompt($session);
+            return $this->prompt($session, $channel);
         }
 
         if ($session->checkout_step === 'address') {
@@ -93,12 +93,12 @@ final class CheckoutConversation
             $session->checkout_address = $address;
             $session->checkout_step = 'confirm';
 
-            return $this->prompt($session);
+            return $this->prompt($session, $channel);
         }
 
         if ($session->checkout_step === 'confirm') {
             if ($command !== 'CONFIRM') {
-                return "Reply CONFIRM to place this order, BACK to edit, or CANCEL to stop.\n".$this->prompt($session);
+                return "Reply CONFIRM to place this order, BACK to edit, or CANCEL to stop.\n".$this->prompt($session, $channel);
             }
             try {
                 $order = $this->orders->place($channel->merchant, $channel, $session);
@@ -140,6 +140,7 @@ final class CheckoutConversation
         if (! $cart) {
             return "\nCart: unavailable";
         }
+
         $subtotal = $cart->items()->get()->sum(fn ($line) => $line->quantity * $line->unit_price_minor);
 
         return "\nProduct subtotal (provisional): ".Money::format($subtotal, $cart->currency);
@@ -154,8 +155,7 @@ final class CheckoutConversation
             'confirm' => "Review order:\nCustomer: {$session->checkout_customer_name}\nPhone: {$session->customer_phone}"
                 ."\nMethod: {$session->checkout_method}"
                 .($session->checkout_method === 'delivery' ? "\nAddress: {$session->checkout_address}" : '')
-                .$this->preview($channel, $session)."
-Prices and stock are rechecked when you confirm."
+                .$this->preview($channel, $session)."\nPrices and stock are rechecked when you confirm."
                 .($session->checkout_method === 'delivery'
                     ? "\nDelivery fees are not configured. The merchant must agree on any fee separately."
                     : '')
