@@ -1,0 +1,73 @@
+name: Release hardening (MySQL 8.4)
+
+on:
+  push:
+    branches: ["feat/batch-12-release-hardening"]
+  pull_request:
+    branches: ["feat/batch-11-platform-admin-analytics"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mysql-integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: commerce_ci
+          MYSQL_USER: commerce
+          MYSQL_PASSWORD: commerce_ci_test_only
+          MYSQL_ROOT_PASSWORD: runner_root_ci_test_only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u commerce -pcommerce_ci_test_only"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+    env:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      DB_DATABASE: commerce_ci
+      DB_USERNAME: commerce
+      DB_PASSWORD: commerce_ci_test_only
+      QUEUE_CONNECTION: database
+      DB_QUEUE_RETRY_AFTER: "180"
+      COMMERCE_MESSAGING_DRIVER: disabled
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, pdo_mysql, mysqlnd
+          coverage: none
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare safe ephemeral test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Full MySQL migrations including platform indexes
+        run: |
+          php artisan migrate:fresh --force
+          php artisan migrate:status
+          php artisan commerce:release:check
+      - name: Full integration regression suite on MySQL
+        run: php artisan test --no-ansi
+      - name: Validate schema rollback and recreation
+        run: |
+          php artisan migrate:fresh --force
+          php artisan commerce:release:check
+      - name: Assert production remains gated without production settings
+        run: |
+          if php artisan commerce:release:check --production; then
+            echo "::error::Unsafe development environment incorrectly passed production preflight"
+            exit 1
+          fi
+          echo "Expected: production deployment remains blocked"
