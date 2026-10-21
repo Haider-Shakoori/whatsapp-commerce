@@ -59,7 +59,7 @@ class PaymentMethodsTest extends TestCase
         ]);
     }
 
-    private function session(PaymentAttempt $attempt, array $overrides = []): array
+    private function checkoutSnapshot(PaymentAttempt $attempt, array $overrides = []): array
     {
         return array_replace([
             'id' => $attempt->provider_session_id, 'object' => 'checkout.session',
@@ -147,8 +147,8 @@ class PaymentMethodsTest extends TestCase
         $order = $this->order($merchant);
         $attempt = $this->attempt($merchant, $order);
         $event = 'evt_same_valid_event_123';
-        $this->webhook($settings, $this->session($attempt), eventId: $event)->assertOk();
-        $this->webhook($settings, $this->session($attempt), eventId: $event)->assertOk();
+        $this->webhook($settings, $this->checkoutSnapshot($attempt), eventId: $event)->assertOk();
+        $this->webhook($settings, $this->checkoutSnapshot($attempt), eventId: $event)->assertOk();
         $this->assertSame('paid', $order->fresh()->payment_status);
         $this->assertSame('paid', $attempt->fresh()->status);
         $this->assertDatabaseCount('payment_webhook_events', 1);
@@ -159,9 +159,9 @@ class PaymentMethodsTest extends TestCase
         [, $merchant, $settings] = $this->shop();
         $order = $this->order($merchant);
         $attempt = $this->attempt($merchant, $order);
-        $this->webhook($settings, $this->session($attempt), valid: false)->assertUnauthorized();
+        $this->webhook($settings, $this->checkoutSnapshot($attempt), valid: false)->assertUnauthorized();
         $this->assertDatabaseCount('payment_webhook_events', 0);
-        $this->webhook($settings, $this->session($attempt, ['amount_total' => 1]))->assertOk();
+        $this->webhook($settings, $this->checkoutSnapshot($attempt, ['amount_total' => 1]))->assertOk();
         $this->assertSame('review', $attempt->fresh()->status);
         $this->assertSame('unpaid', $order->fresh()->payment_status);
     }
@@ -172,7 +172,7 @@ class PaymentMethodsTest extends TestCase
         $order = $this->order($merchant);
         $attempt = $this->attempt($merchant, $order);
         $order->update(['status' => 'cancelled']);
-        $this->webhook($settings, $this->session($attempt))->assertOk();
+        $this->webhook($settings, $this->checkoutSnapshot($attempt))->assertOk();
         $this->assertSame('review', $attempt->fresh()->status);
         $this->assertSame('unpaid', $order->fresh()->payment_status);
     }
@@ -182,7 +182,7 @@ class PaymentMethodsTest extends TestCase
         [$owner, $merchant] = $this->shop();
         $order = $this->order($merchant);
         $attempt = $this->attempt($merchant, $order);
-        Http::fake(['api.stripe.com/*' => Http::response($this->session($attempt))]);
+        Http::fake(['api.stripe.com/*' => Http::response($this->checkoutSnapshot($attempt))]);
         $this->actingAs($owner)->post(route('merchant.orders.payments.reconcile', [$merchant, $order, $attempt]))
             ->assertRedirect();
         $this->assertSame('paid', $order->fresh()->payment_status);
