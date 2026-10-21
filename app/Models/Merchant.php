@@ -51,6 +51,16 @@ class Merchant extends Model
         return $this->hasMany(PaymentAttempt::class);
     }
 
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
     public function carts(): HasMany
     {
         return $this->hasMany(ShoppingCart::class);

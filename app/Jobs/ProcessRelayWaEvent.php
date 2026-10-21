@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Messaging\ChatCatalogMenu;
+use App\Messaging\ConversationInbox;
 use App\Messaging\RelayWaClient;
 use App\Models\InboundEvent;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,7 +20,7 @@ class ProcessRelayWaEvent implements ShouldQueue
 
     public function __construct(public readonly int $eventId) {}
 
-    public function handle(RelayWaClient $client, ChatCatalogMenu $menu): void
+    public function handle(RelayWaClient $client, ChatCatalogMenu $menu, ConversationInbox $inbox): void
     {
         $event = InboundEvent::with('channel.merchant')->find($this->eventId);
         if (! $event || $event->processed_at || ! $event->channel) {
@@ -33,15 +34,14 @@ class ProcessRelayWaEvent implements ShouldQueue
         // Do not use webhook data as the source of the chat body. RelayWA
         // delivers the message ID, while text is stored in its messages API.
         $message = null;
-        if ($type === 'message.received' && $channel->menu_enabled
-            && config('commerce.messaging_driver') === 'relaywa') {
+        if ($type === 'message.received' && config('commerce.messaging_driver') === 'relaywa') {
             $messageId = $payload['data']['messageId'] ?? null;
             if (is_string($messageId) && $messageId !== '') {
                 $message = $client->inboundMessage($channel, $messageId);
             }
         }
 
-        DB::transaction(function () use ($menu, $type, $message): void {
+        DB::transaction(function () use ($menu, $inbox, $type, $message): void {
             // Lock the inbox row: no duplicate bot state mutations on job retries.
             $event = InboundEvent::with('channel.merchant')->lockForUpdate()->find($this->eventId);
             if (! $event || $event->processed_at || ! $event->channel) {
@@ -60,6 +60,7 @@ class ProcessRelayWaEvent implements ShouldQueue
             }
 
             if ($type === 'message.received' && $message !== null) {
+                $inbox->recordInbound($event, $event->channel, $message);
                 $menu->handle($event, $event->channel, $message);
             }
 
