@@ -12,6 +12,9 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderPaymentController;
 use App\Http\Controllers\PaymentReturnController;
 use App\Http\Controllers\PaymentSettingsController;
+use App\Http\Controllers\PlatformAdminController;
+use App\Http\Controllers\PlatformSettingsController;
+use App\Http\Controllers\PlatformSubscriptionsController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ProductImportController;
@@ -33,6 +36,21 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::prefix('platform')->middleware('platform.admin')->name('platform.')->group(function () {
+        Route::get('/', [PlatformAdminController::class, 'index'])->name('index');
+        Route::get('/merchants', [PlatformAdminController::class, 'merchants'])->name('merchants.index');
+        Route::get('/merchants/{merchant:slug}', [PlatformAdminController::class, 'show'])->name('merchants.show');
+        Route::post('/merchants/{merchant:slug}/status', [PlatformAdminController::class, 'setMerchantStatus'])
+            ->middleware('throttle:6,1')->name('merchants.status');
+        Route::get('/subscriptions', [PlatformSubscriptionsController::class, 'index'])->name('subscriptions.index');
+        Route::post('/merchants/{merchant:slug}/subscription/grant', [PlatformSubscriptionsController::class, 'grant'])
+            ->middleware('throttle:3,1')->name('subscriptions.grant');
+        Route::get('/settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [PlatformSettingsController::class, 'update'])
+            ->middleware('throttle:5,1')->name('settings.update');
+        Route::get('/audit', [PlatformAdminController::class, 'audits'])->name('audit.index');
+    });
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
