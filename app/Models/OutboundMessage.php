@@ -23,6 +23,11 @@ class OutboundMessage extends Model
         ];
     }
 
+    public function merchant(): BelongsTo
+    {
+        return $this->belongsTo(Merchant::class);
+    }
+
     public function channel(): BelongsTo
     {
         return $this->belongsTo(MessagingChannel::class, 'messaging_channel_id');
