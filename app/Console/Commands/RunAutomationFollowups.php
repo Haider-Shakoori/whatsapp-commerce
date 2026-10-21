@@ -7,6 +7,8 @@ use App\Messaging\CommerceOutbox;
 use App\Models\AutomationFollowup;
 use App\Models\AutomationSetting;
 use App\Models\ConversationMessage;
+use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -17,13 +19,13 @@ class RunAutomationFollowups extends Command
 
     protected $description = 'Send only consent-confirmed, merchant-scheduled one-time follow-ups';
 
-    public function handle(CommerceOutbox $outbox, BusinessHours $hours): int
+    public function handle(CommerceOutbox $outbox, BusinessHours $hours, MerchantEntitlements $entitlements): int
     {
         AutomationFollowup::where('status', 'scheduled')
-            ->where('due_at', '<=', now())->orderBy('id')->chunkById(100, function ($followups) use ($outbox, $hours): void {
+            ->where('due_at', '<=', now())->orderBy('id')->chunkById(100, function ($followups) use ($outbox, $hours, $entitlements): void {
                 foreach ($followups as $followup) {
                     try {
-                        DB::transaction(function () use ($followup, $outbox, $hours): void {
+                        DB::transaction(function () use ($followup, $outbox, $hours, $entitlements): void {
                             $job = AutomationFollowup::whereKey($followup->id)->lockForUpdate()->first();
                             if (! $job || $job->status !== 'scheduled') {
                                 return;
@@ -44,6 +46,14 @@ class RunAutomationFollowups extends Command
                                 || $conversation->customer->automation_opted_out
                                 || (int) $latestInbound !== (int) $job->latest_inbound_id
                                 || ! $hours->isOpen($merchant, $setting)) {
+                                $job->update(['status' => 'skipped']);
+
+                                return;
+                            }
+
+                            try {
+                                $entitlements->assertFeature($merchant, 'automation');
+                            } catch (SubscriptionLimitException $e) {
                                 $job->update(['status' => 'skipped']);
 
                                 return;

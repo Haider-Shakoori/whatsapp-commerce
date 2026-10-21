@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Merchant;
+use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ use InvalidArgumentException;
 
 class ProductImportController extends Controller
 {
-    public function store(Request $request, Merchant $merchant): RedirectResponse
+    public function store(Request $request, Merchant $merchant, MerchantEntitlements $entitlements): RedirectResponse
     {
         $request->validate(['file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
         $stream = fopen($request->file('file')->getRealPath(), 'rb');
@@ -83,50 +85,56 @@ class ProductImportController extends Controller
         }
 
         // All rows are validated before the transaction; a failure never leaves a partial import.
-        [$created, $updated] = DB::transaction(function () use ($records, $merchant): array {
-            $created = 0;
-            $updated = 0;
-            foreach ($records as $row) {
-                $categoryId = null;
-                if ($row['category'] !== '') {
-                    $slug = Str::slug($row['category']);
-                    if ($slug === '') {
-                        throw ValidationException::withMessages(['file' => 'Invalid category slug.']);
+        try {
+            [$created, $updated] = DB::transaction(function () use ($records, $merchant, $entitlements): array {
+                $existing = $merchant->products()->whereIn('sku', array_column($records, 'sku'))->pluck('sku')->all();
+                $entitlements->assertCapacity($merchant, 'products', count($records) - count($existing));
+                $created = 0;
+                $updated = 0;
+                foreach ($records as $row) {
+                    $categoryId = null;
+                    if ($row['category'] !== '') {
+                        $slug = Str::slug($row['category']);
+                        if ($slug === '') {
+                            throw ValidationException::withMessages(['file' => 'Invalid category slug.']);
+                        }
+                        $category = $merchant->categories()->firstOrCreate(['slug' => $slug], ['name' => $row['category']]);
+                        $categoryId = $category->id;
                     }
-                    $category = $merchant->categories()->firstOrCreate(['slug' => $slug], ['name' => $row['category']]);
-                    $categoryId = $category->id;
+                    $product = $merchant->products()->where('sku', $row['sku'])->first();
+                    if ($product) {
+                        // Stock is intentionally not overwritten during reimports: adjustments must be audited.
+                        $product->update([
+                            'name' => $row['name'], 'description' => $row['description'],
+                            'price_minor' => $row['price_minor'], 'category_id' => $categoryId,
+                            'is_active' => $row['is_active'],
+                        ]);
+                        $updated++;
+                    } else {
+                        $base = Str::slug($row['name']);
+                        if ($base === '') {
+                            throw ValidationException::withMessages(['file' => 'Product name cannot generate a URL slug.']);
+                        }
+                        $slug = $base;
+                        $suffix = 2;
+                        while ($merchant->products()->where('slug', $slug)->exists()) {
+                            $slug = $base.'-'.$suffix++;
+                        }
+                        $merchant->products()->create([
+                            'name' => $row['name'], 'slug' => $slug, 'sku' => $row['sku'],
+                            'description' => $row['description'], 'price_minor' => $row['price_minor'],
+                            'currency' => $merchant->currency, 'stock_quantity' => $row['stock_quantity'],
+                            'category_id' => $categoryId, 'is_active' => $row['is_active'],
+                        ]);
+                        $created++;
+                    }
                 }
-                $product = $merchant->products()->where('sku', $row['sku'])->first();
-                if ($product) {
-                    // Stock is intentionally not overwritten during reimports: adjustments must be audited.
-                    $product->update([
-                        'name' => $row['name'], 'description' => $row['description'],
-                        'price_minor' => $row['price_minor'], 'category_id' => $categoryId,
-                        'is_active' => $row['is_active'],
-                    ]);
-                    $updated++;
-                } else {
-                    $base = Str::slug($row['name']);
-                    if ($base === '') {
-                        throw ValidationException::withMessages(['file' => 'Product name cannot generate a URL slug.']);
-                    }
-                    $slug = $base;
-                    $suffix = 2;
-                    while ($merchant->products()->where('slug', $slug)->exists()) {
-                        $slug = $base.'-'.$suffix++;
-                    }
-                    $merchant->products()->create([
-                        'name' => $row['name'], 'slug' => $slug, 'sku' => $row['sku'],
-                        'description' => $row['description'], 'price_minor' => $row['price_minor'],
-                        'currency' => $merchant->currency, 'stock_quantity' => $row['stock_quantity'],
-                        'category_id' => $categoryId, 'is_active' => $row['is_active'],
-                    ]);
-                    $created++;
-                }
-            }
 
-            return [$created, $updated];
-        });
+                return [$created, $updated];
+            });
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['file' => $e->getMessage()]);
+        }
 
         return back()->with('status', "CSV import finished: {$created} created, {$updated} updated. Stock on existing SKUs was preserved.");
     }

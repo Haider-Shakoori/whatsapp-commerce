@@ -11,6 +11,46 @@ class Merchant extends Model
 {
     protected $fillable = ['name', 'slug', 'business_type', 'currency', 'timezone', 'status'];
 
+    protected static function booted(): void
+    {
+        static::created(function (self $merchant): void {
+            // Every new merchant receives one bounded evaluation. Never
+            // auto-convert to a paid tier or start an external payment.
+            $trial = SubscriptionPlan::where('code', 'trial')->firstOrFail();
+            $sub = $merchant->subscription()->create([
+                'subscription_plan_id' => $trial->id,
+                'status' => 'trialing',
+                'period_start' => now(),
+                'period_end' => now()->addDays($trial->trial_days),
+                'auto_renew' => false,
+            ]);
+            $merchant->subscriptionEvents()->create([
+                'merchant_subscription_id' => $sub->id, 'event' => 'trial_started',
+                'details' => ['plan' => 'trial', 'days' => $trial->trial_days],
+            ]);
+        });
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(MerchantSubscription::class);
+    }
+
+    public function subscriptionUsages(): HasMany
+    {
+        return $this->hasMany(SubscriptionUsage::class);
+    }
+
+    public function subscriptionEvents(): HasMany
+    {
+        return $this->hasMany(SubscriptionEvent::class);
+    }
+
+    public function subscriptionInvoices(): HasMany
+    {
+        return $this->hasMany(SubscriptionInvoice::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

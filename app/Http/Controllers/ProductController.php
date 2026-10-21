@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Merchant;
 use App\Models\Product;
+use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -32,7 +35,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request, Merchant $merchant): RedirectResponse
+    public function store(Request $request, Merchant $merchant, MerchantEntitlements $entitlements): RedirectResponse
     {
         $data = $this->validatedProduct($request, $merchant);
         $slug = Str::slug($data['name']);
@@ -41,12 +44,19 @@ class ProductController extends Controller
             throw ValidationException::withMessages(['name' => 'Choose a unique product name for this business.']);
         }
 
-        $product = $merchant->products()->create([
-            ...$data,
-            'slug' => $slug,
-            'currency' => $merchant->currency,
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        try {
+            DB::transaction(function () use ($entitlements, $merchant, $data, $slug, $request): void {
+                $entitlements->assertCapacity($merchant, 'products');
+                $merchant->products()->create([
+                    ...$data,
+                    'slug' => $slug,
+                    'currency' => $merchant->currency,
+                    'is_active' => $request->boolean('is_active', true),
+                ]);
+            });
+        } catch (SubscriptionLimitException $e) {
+            throw ValidationException::withMessages(['name' => $e->getMessage()]);
+        }
 
         return redirect()->route('merchant.products.index', $merchant)
             ->with('status', 'Product saved. Open Edit / options to add photos, variants and extras.');
