@@ -45,6 +45,7 @@ class RunAutomationFollowups extends Command
                                 || (int) $latestInbound !== (int) $job->latest_inbound_id
                                 || ! $hours->isOpen($merchant, $setting)) {
                                 $job->update(['status' => 'skipped']);
+
                                 return;
                             }
 

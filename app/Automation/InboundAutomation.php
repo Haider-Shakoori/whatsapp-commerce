@@ -5,10 +5,10 @@ namespace App\Automation;
 use App\Messaging\CommerceOutbox;
 use App\Models\AutomationReply;
 use App\Models\AutomationSetting;
+use App\Models\ChatMenuSession;
+use App\Models\Conversation;
 use App\Models\InboundEvent;
 use App\Models\MessagingChannel;
-use App\Models\Conversation;
-use App\Models\ChatMenuSession;
 
 final class InboundAutomation
 {
@@ -51,10 +51,12 @@ final class InboundAutomation
         $command = mb_strtoupper(trim($text));
         if ($command === 'STOP') {
             $customer->update(['automation_opted_out' => true]);
+
             return;
         }
         if ($command === 'START') {
             $customer->update(['automation_opted_out' => false]);
+
             return;
         }
         if ($customer->automation_opted_out || $conversation->status === 'closed') {
