@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Merchant;
 use App\Models\OutboundMessage;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -193,7 +194,7 @@ class MerchantAutomationTest extends TestCase
 
     public function test_business_hours_use_merchant_timezone(): void
     {
-        $this->travelTo(\Carbon\Carbon::parse('2026-10-21 18:00:00', 'UTC'));
+        $this->travelTo(Carbon::parse('2026-10-21 18:00:00', 'UTC'));
         [, , $channel, $settings] = $this->shop('after-hours');
         $settings->update([
             'after_hours_enabled' => true,
