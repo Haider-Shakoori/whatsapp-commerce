@@ -45,6 +45,11 @@ class MerchantAutomationTest extends TestCase
             'commerce.relaywa_base_url' => 'https://relaywa.example.test/api',
         ]);
         Http::fake(function (HttpRequest $request) {
+            if ($request->url() === 'https://api.openai.com/v1/responses') {
+                return Http::response(['output' => [['content' => [
+                    ['type' => 'output_text', 'text' => 'Please check with our staff.'],
+                ]]]]);
+            }
             if ($request->method() === 'POST' && str_ends_with($request->url(), '/messages/text')) {
                 return Http::response(['id' => (string) Str::uuid()]);
             }
@@ -159,9 +164,6 @@ class MerchantAutomationTest extends TestCase
         $this->actingAs($owner)->post(route('merchant.inbox.ai-draft', [$merchant, $conversation]))
             ->assertSessionHasErrors('ai');
         $setting->update(['ai_drafts_enabled' => true, 'ai_guidance' => 'Never guess business hours.']);
-        Http::fake(['api.openai.com/v1/responses' => Http::response([
-            'output' => [['content' => [['type' => 'output_text', 'text' => 'Please check with our staff.']]]],
-        ])]);
         $this->actingAs($owner)->post(route('merchant.inbox.ai-draft', [$merchant, $conversation]))
             ->assertRedirect()->assertSessionHas('ai_draft', 'Please check with our staff.');
         $this->assertDatabaseCount('outbound_messages', 0);
