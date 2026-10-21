@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ProductImportController;
@@ -27,9 +28,12 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::get('/channels', [RelayWaChannelController::class, 'index'])->middleware('merchant.manage')->name('channels.index');
 
         Route::middleware('merchant.manage')->group(function () {
+            Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
             Route::post('/channels', [RelayWaChannelController::class, 'store'])->name('channels.store');
             Route::post('/channels/{channel}/menu', [RelayWaChannelController::class, 'setMenuEnabled'])->name('channels.menu');
             Route::post('/channels/{channel}/webhook-secret', [RelayWaChannelController::class, 'setWebhookSecret'])->name('channels.webhook-secret');
