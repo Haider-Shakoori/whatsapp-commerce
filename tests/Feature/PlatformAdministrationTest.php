@@ -13,6 +13,7 @@ use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Saas\Exceptions\SubscriptionLimitException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -161,6 +162,7 @@ class PlatformAdministrationTest extends TestCase
         $this->assertTrue(PlatformSetting::enabled('outbound_paused'));
         $this->assertDatabaseCount('platform_audit_logs', 2);
 
+        Auth::logout(); // Registration routes intentionally redirect authenticated users.
         $this->get(route('register'))->assertServiceUnavailable();
         $this->post(route('register.store'))->assertServiceUnavailable();
         $this->actingAs($owner)->get(route('merchant.products.index', $merchant))->assertOk();
