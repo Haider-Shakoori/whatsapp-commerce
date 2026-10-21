@@ -113,7 +113,7 @@ class PlatformAdministrationTest extends TestCase
 
         $this->actingAs($owner)->post($url, [
             'status' => 'suspended', 'reason' => 'fraud response review',
-            'confirmation' => 'SUSPEND', 'current_password' => 'password',
+            'confirmation' => 'SUSPEND', 'current_password' => 'password-for-testing',
         ])->assertForbidden();
         $this->actingAs($admin)->post($url, [
             'status' => 'suspended', 'reason' => 'fraud response review',
@@ -121,7 +121,7 @@ class PlatformAdministrationTest extends TestCase
         ])->assertSessionHasErrors('current_password');
         $this->actingAs($admin)->post($url, [
             'status' => 'suspended', 'reason' => 'fraud response review',
-            'confirmation' => 'SUSPEND', 'current_password' => 'password',
+            'confirmation' => 'SUSPEND', 'current_password' => 'password-for-testing',
         ])->assertRedirect();
         $this->assertSame('suspended', $merchant->fresh()->status);
         $this->assertDatabaseHas('platform_audit_logs', [
@@ -139,7 +139,7 @@ class PlatformAdministrationTest extends TestCase
 
         $this->actingAs($admin)->post($url, [
             'status' => 'active', 'reason' => 'review completed and approved',
-            'confirmation' => 'REACTIVATE', 'current_password' => 'password',
+            'confirmation' => 'REACTIVATE', 'current_password' => 'password-for-testing',
         ])->assertRedirect();
         $this->assertSame('active', $merchant->fresh()->status);
         $this->actingAs($owner)->get(route('merchant.products.index', $merchant))->assertOk();
@@ -155,7 +155,7 @@ class PlatformAdministrationTest extends TestCase
             'registration_paused' => '1',
             'outbound_paused' => '1',
             'reason' => 'scheduled maintenance safety testing',
-            'confirmation' => 'APPLY', 'current_password' => 'password',
+            'confirmation' => 'APPLY', 'current_password' => 'password-for-testing',
         ])->assertRedirect();
         $this->assertTrue(PlatformSetting::enabled('registration_paused'));
         $this->assertTrue(PlatformSetting::enabled('outbound_paused'));
@@ -174,7 +174,7 @@ class PlatformAdministrationTest extends TestCase
         $this->actingAs($owner)->put(route('platform.settings.update'), [
             'registration_paused' => '1', 'outbound_paused' => '1',
             'reason' => 'unauthorized attempt to pause business',
-            'confirmation' => 'APPLY', 'current_password' => 'password',
+            'confirmation' => 'APPLY', 'current_password' => 'password-for-testing',
         ])->assertForbidden();
         $this->assertFalse(PlatformSetting::enabled('outbound_paused'));
         $this->assertFalse(PlatformSetting::enabled('registration_paused'));
@@ -188,7 +188,7 @@ class PlatformAdministrationTest extends TestCase
         $data = [
             'plan_code' => 'growth', 'months' => 2,
             'reason' => 'approved manual evaluation extension',
-            'confirmation' => 'GRANT', 'current_password' => 'password',
+            'confirmation' => 'GRANT', 'current_password' => 'password-for-testing',
         ];
         $this->actingAs($owner)->post($url, $data)->assertForbidden();
         $this->actingAs($admin)->post($url, [...$data, 'confirmation' => 'YES'])
@@ -212,7 +212,7 @@ class PlatformAdministrationTest extends TestCase
         $this->actingAs($admin)->put(route('platform.settings.update'), [
             'registration_paused' => '1', 'outbound_paused' => '1',
             'reason' => 'emergency operational incident',
-            'confirmation' => 'WRONG', 'current_password' => 'password',
+            'confirmation' => 'WRONG', 'current_password' => 'password-for-testing',
         ])->assertSessionHasErrors('confirmation');
         $this->assertFalse(PlatformSetting::enabled('registration_paused'));
         $this->assertDatabaseCount('platform_audit_logs', 0);
