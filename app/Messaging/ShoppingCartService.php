@@ -127,7 +127,7 @@ final class ShoppingCartService
         return "🛒 Your cart\n".implode("\n", $rows)
             ."\n\nSubtotal: ".Money::format($total, $cart->currency)
             ."\n\nQTY <item #> <number> to change quantity\nREMOVE <item #> to delete\nCLEAR to empty cart"
-            ."\nMENU to browse more products\nCheckout is not available yet. Prices and stock will be checked again at checkout.";
+            ."\nMENU to browse more products\nReply CHECKOUT to place an order. Prices and stock are checked again at confirmation.";
     }
 
     public function setQuantity(Merchant $merchant, MessagingChannel $channel, string $phone, int $index, int $quantity): string

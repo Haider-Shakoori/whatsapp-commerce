@@ -75,3 +75,8 @@ The merchant can enable or disable an automated text menu in WhatsApp connection
 ## Customer cart (Batch 05)
 
 Customers open the chat MENU, view a product and reply ADD or ADD 2, then select sizes/colors and any required/optional toppings. CART displays subtotal; QTY, REMOVE, CLEAR and CLEAR YES maintain the basket. CHECKOUT is intentionally disabled. Cart prices are provisional, stock is not reserved, and price and stock must be reverified at actual checkout. See [Batch 05 cart documentation](docs/CART.md).
+
+
+## Checkout & Order Management (Batch 06)
+
+Customers use CHECKOUT from a saved cart, provide name and pickup/delivery details, review an indicative subtotal, then CONFIRM. A confirmed order is placed as unpaid and its items are deducted from tracked inventory in one transaction; failures preserve the cart. Merchants review orders from the dashboard and progress statuses or cancel with stock restoration. No payment integration or delivery-rate calculation is activated. See [Checkout implementation and limitations](docs/CHECKOUT.md).
