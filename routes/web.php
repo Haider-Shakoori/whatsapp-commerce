@@ -18,6 +18,7 @@ use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProductModifierController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\RelayWaChannelController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -36,6 +37,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/subscription', [SubscriptionController::class, 'index'])->name('subscription.index');
         Route::get('/inbox', [ConversationController::class, 'index'])->name('inbox.index');
         Route::post('/inbox/{conversation}/followups', [ConversationAutomationController::class, 'schedule'])->name('inbox.followups.store');
         Route::post('/inbox/{conversation}/followups/{followup}/cancel', [ConversationAutomationController::class, 'cancel'])->name('inbox.followups.cancel');
@@ -53,6 +55,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/automation', [AutomationController::class, 'index'])->middleware('merchant.manage')->name('automation.index');
         Route::middleware('merchant.manage')->group(function () {
+            Route::post('/subscription/request', [SubscriptionController::class, 'requestPlan'])->middleware('throttle:5,1')->name('subscription.request');
             Route::put('/automation', [AutomationController::class, 'update'])->name('automation.update');
             Route::post('/automation/rules', [AutomationController::class, 'addRule'])->name('automation.rules.store');
             Route::delete('/automation/rules/{rule}', [AutomationController::class, 'deleteRule'])->name('automation.rules.destroy');
