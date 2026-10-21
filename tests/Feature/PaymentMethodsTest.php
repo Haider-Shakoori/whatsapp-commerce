@@ -210,4 +210,27 @@ class PaymentMethodsTest extends TestCase
         $this->get(route('payments.return', $attempt->public_id))->assertOk();
         $this->assertSame('unpaid', $order->fresh()->payment_status);
     }
+
+    public function test_signed_callback_recovers_existing_unprocessed_receipt_and_rejects_replays(): void
+    {
+        [, $merchant, $settings] = $this->shop('recovery');
+        $order = $this->order($merchant);
+        $attempt = $this->attempt($merchant, $order);
+        $eventId = 'evt_recovery_after_worker_failure';
+        \App\Models\PaymentWebhookEvent::create([
+            'merchant_id' => $merchant->id,
+            'provider' => 'stripe_test',
+            'provider_event_id' => $eventId,
+            'outcome' => 'received',
+        ]);
+
+        $this->webhook($settings, $this->checkoutSnapshot($attempt), eventId: $eventId)->assertOk();
+        $this->webhook($settings, $this->checkoutSnapshot($attempt), eventId: $eventId)->assertOk();
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertSame('paid', $attempt->fresh()->status);
+        $this->assertDatabaseHas('payment_webhook_events', [
+            'provider_event_id' => $eventId, 'outcome' => 'paid',
+        ]);
+        $this->assertDatabaseCount('payment_webhook_events', 1);
+    }
 }

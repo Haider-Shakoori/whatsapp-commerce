@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessRelayWaEvent;
 use App\Messaging\CommerceOutbox;
 use App\Messaging\RelayWaClient;
 use App\Models\Merchant;
@@ -171,5 +172,39 @@ class ReleaseHardeningTest extends TestCase
         $this->assertSame($one->id, $same->id);
         $this->assertSame(1, $merchant->subscriptionUsages()->firstOrFail()->outbound_count);
         $this->assertDatabaseCount('outbound_messages', 1);
+    }
+
+    public function test_signed_relaywa_retry_requeues_unprocessed_event_but_not_completed_event(): void
+    {
+        Queue::fake();
+        [, $channel] = $this->channel('webhook-restore');
+        $channel->update(['credentials' => [
+            'api_key' => 'rw_session_testing_only',
+            'webhook_secret' => 'test-webhook-secret-with-valid-length',
+        ]]);
+        $id = (string) Str::uuid();
+        $payload = json_encode([
+            'id' => (string) Str::uuid(),
+            'type' => 'message.received',
+            'sessionId' => $channel->external_account_id,
+            'data' => ['messageId' => $id],
+        ], JSON_THROW_ON_ERROR);
+        $time = (string) time();
+        $header = [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_RELAYWA_TIMESTAMP' => $time,
+            'HTTP_X_RELAYWA_SIGNATURE' => 'sha256='.hash_hmac(
+                'sha256', $time.'.'.$payload, $channel->credentials['webhook_secret']
+            ),
+        ];
+        $url = route('api.relaywa.webhook', ['publicId' => $channel->public_id]);
+        $this->call('POST', $url, [], [], [], $header, $payload)->assertOk();
+        $this->call('POST', $url, [], [], [], $header, $payload)->assertOk();
+        $this->assertDatabaseCount('inbound_events', 1);
+        Queue::assertPushed(ProcessRelayWaEvent::class, 2);
+
+        \App\Models\InboundEvent::firstOrFail()->update(['processed_at' => now()]);
+        $this->call('POST', $url, [], [], [], $header, $payload)->assertOk();
+        Queue::assertPushed(ProcessRelayWaEvent::class, 2);
     }
 }
