@@ -51,13 +51,13 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/catalog.css') }}">
     @if($workspace)
-        <link rel="stylesheet" href="{{ asset('css/workspace.css') }}?v=13">
+        <link rel="stylesheet" href="{{ asset('css/workspace.css') }}?v=14">
         <script>
             try {
                 document.documentElement.dataset.theme = localStorage.getItem('commerce-theme') === 'dark' ? 'dark' : 'light';
             } catch (_) { document.documentElement.dataset.theme = 'light'; }
         </script>
-        <script src="{{ asset('js/workspace.js') }}?v=13" defer></script>
+        <script src="{{ asset('js/workspace.js') }}?v=14" defer></script>
     @endif
 </head>
 <body @class(['workspace-mode' => $workspace])>
