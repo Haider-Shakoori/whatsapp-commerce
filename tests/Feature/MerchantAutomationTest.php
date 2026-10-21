@@ -148,4 +148,59 @@ class MerchantAutomationTest extends TestCase
         $this->assertSame('queued', AutomationFollowup::firstOrFail()->status);
         $this->travelBack();
     }
+
+    public function test_ai_draft_is_optin_staff_requested_and_never_sends(): void
+    {
+        [$owner, $merchant, $channel, $setting] = $this->shop('ai');
+        $this->say($channel, 'When is the shop open tomorrow?');
+        $conversation = Conversation::firstOrFail();
+        config(['commerce.ai_api_key' => 'test-only']);
+
+        $this->actingAs($owner)->post(route('merchant.inbox.ai-draft', [$merchant, $conversation]))
+            ->assertSessionHasErrors('ai');
+        $setting->update(['ai_drafts_enabled' => true, 'ai_guidance' => 'Never guess business hours.']);
+        Http::fake(['api.openai.com/v1/responses' => Http::response([
+            'output' => [['content' => [['type' => 'output_text', 'text' => 'Please check with our staff.']]]],
+        ])]);
+        $this->actingAs($owner)->post(route('merchant.inbox.ai-draft', [$merchant, $conversation]))
+            ->assertRedirect()->assertSessionHas('ai_draft', 'Please check with our staff.');
+        $this->assertDatabaseCount('outbound_messages', 0);
+        Http::assertSent(function (HttpRequest $request) {
+            return $request->url() === 'https://api.openai.com/v1/responses'
+                && ($request->data()['store'] ?? null) === false
+                && ! str_contains(json_encode($request->data()), '93700111222');
+        });
+    }
+
+    public function test_other_merchants_cannot_change_rules_or_access_drafts(): void
+    {
+        [, $merchant, $channel] = $this->shop('first-shop');
+        [$other, $foreign] = $this->shop('second-shop');
+        $rule = $merchant->automationRules()->create([
+            'keyword' => 'refund', 'reply_text' => 'Please contact staff.', 'priority' => 1,
+        ]);
+        $this->say($channel, 'Hi there');
+        $conversation = Conversation::where('merchant_id', $merchant->id)->firstOrFail();
+        $this->actingAs($other)->get(route('merchant.automation.index', $merchant))->assertForbidden();
+        $this->actingAs($other)->delete(route('merchant.automation.rules.destroy', [$foreign, $rule]))
+            ->assertNotFound();
+        $this->actingAs($other)->post(route('merchant.inbox.ai-draft', [$foreign, $conversation]))
+            ->assertNotFound();
+        $this->assertDatabaseCount('automation_rules', 1);
+    }
+
+    public function test_business_hours_use_merchant_timezone(): void
+    {
+        $this->travelTo(\Carbon\Carbon::parse('2026-10-21 18:00:00', 'UTC'));
+        [, , $channel, $settings] = $this->shop('after-hours');
+        $settings->update([
+            'after_hours_enabled' => true,
+            'keyword_enabled' => false,
+            'weekly_hours' => ['3' => ['start' => '09:00', 'end' => '17:00']],
+            'after_hours_message' => 'We respond during opening hours.',
+        ]);
+        $this->say($channel, 'When are you open?');
+        $this->assertSame('We respond during opening hours.', OutboundMessage::firstOrFail()->body);
+        $this->travelBack();
+    }
 }
