@@ -118,7 +118,7 @@ class TeamInboxTest extends TestCase
         $id = $this->inbound($channel, 'Hello');
         $this->signed($channel, $id, (string) Str::uuid())->assertOk();
         $this->assertDatabaseCount('conversation_messages', 1);
-        $this->assertDatabaseCount('inbound_events', 2);
+        $this->assertDatabaseCount('inbound_events', 1); // The webhook itself deduplicates by message ID.
         $this->assertSame(1, Conversation::firstOrFail()->unread_count);
     }
 
