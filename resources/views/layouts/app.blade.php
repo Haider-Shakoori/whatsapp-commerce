@@ -14,6 +14,9 @@
     <div class="nav-right">
         @auth
             <a href="{{ route('dashboard') }}">My businesses</a>
+            @if(auth()->user()->platformAdministrator()->exists())
+              <a href="{{ route('platform.index') }}">Platform</a>
+            @endif
             <span class="muted">{{ auth()->user()->name }}</span>
             <form method="post" action="{{ route('logout') }}">@csrf<button class="btn btn-light" type="submit">Sign out</button></form>
         @else

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Merchant;
+use App\Models\PlatformSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,11 +16,14 @@ class AuthController extends Controller
 {
     public function registerForm(): View
     {
+        abort_if(PlatformSetting::enabled('registration_paused'), 503, 'New merchant registrations are temporarily paused.');
+
         return view('auth.register');
     }
 
     public function register(Request $request): RedirectResponse
     {
+        abort_if(PlatformSetting::enabled('registration_paused'), 503, 'New merchant registrations are temporarily paused.');
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
