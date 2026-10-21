@@ -56,6 +56,8 @@ class ConversationController extends Controller
             'members' => $merchant->users()->orderBy('name')->get(),
             'isManager' => $this->isManager($request, $merchant),
             'canReply' => $this->mayReply($request, $merchant, $conversation),
+            'automationSettings' => $merchant->automationSetting,
+            'followups' => $merchant->automationFollowups()->where('conversation_id', $conversation->id)->latest('id')->limit(10)->get(),
         ]);
     }
 

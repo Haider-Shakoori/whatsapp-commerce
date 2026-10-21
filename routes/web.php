@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AutomationController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ConversationAutomationController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -35,6 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::get('/inbox', [ConversationController::class, 'index'])->name('inbox.index');
+        Route::post('/inbox/{conversation}/followups', [ConversationAutomationController::class, 'schedule'])->name('inbox.followups.store');
+        Route::post('/inbox/{conversation}/followups/{followup}/cancel', [ConversationAutomationController::class, 'cancel'])->name('inbox.followups.cancel');
+        Route::post('/inbox/{conversation}/ai-draft', [ConversationAutomationController::class, 'draft'])->middleware('throttle:3,1')->name('inbox.ai-draft');
         Route::get('/inbox/{conversation}', [ConversationController::class, 'show'])->name('inbox.show');
         Route::post('/inbox/{conversation}/read', [ConversationController::class, 'markRead'])->name('inbox.read');
         Route::post('/inbox/{conversation}/reply', [ConversationController::class, 'reply'])->name('inbox.reply');
@@ -46,7 +51,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::get('/channels', [RelayWaChannelController::class, 'index'])->middleware('merchant.manage')->name('channels.index');
 
+        Route::get('/automation', [AutomationController::class, 'index'])->middleware('merchant.manage')->name('automation.index');
         Route::middleware('merchant.manage')->group(function () {
+            Route::put('/automation', [AutomationController::class, 'update'])->name('automation.update');
+            Route::post('/automation/rules', [AutomationController::class, 'addRule'])->name('automation.rules.store');
+            Route::delete('/automation/rules/{rule}', [AutomationController::class, 'deleteRule'])->name('automation.rules.destroy');
             Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
             Route::post('/inbox/{conversation}/assign', [ConversationController::class, 'assign'])->name('inbox.assign');
             Route::post('/inbox/{conversation}/status', [ConversationController::class, 'changeStatus'])->name('inbox.status');

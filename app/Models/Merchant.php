@@ -51,6 +51,21 @@ class Merchant extends Model
         return $this->hasMany(PaymentAttempt::class);
     }
 
+    public function automationSetting(): HasOne
+    {
+        return $this->hasOne(AutomationSetting::class);
+    }
+
+    public function automationRules(): HasMany
+    {
+        return $this->hasMany(AutomationRule::class);
+    }
+
+    public function automationFollowups(): HasMany
+    {
+        return $this->hasMany(AutomationFollowup::class);
+    }
+
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);
