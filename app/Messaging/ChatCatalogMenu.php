@@ -15,7 +15,7 @@ final class ChatCatalogMenu
 
     private const CATEGORY_PAGE_SIZE = 8;
 
-    public function __construct(private readonly CommerceOutbox $outbox, private readonly CartConversation $cart) {}
+    public function __construct(private readonly CommerceOutbox $outbox, private readonly CartConversation $cart, private readonly CheckoutConversation $checkout) {}
 
     /**
      * Invoked with the inbound event row locked in a database transaction.
@@ -65,6 +65,7 @@ final class ChatCatalogMenu
 
         if ($command === 'STOP') {
             $this->cart->reset($session);
+            $this->checkout->cancel($session);
             $session->selected_product_id = null;
             $session->update(['opted_out' => true, 'choice_ids' => []]);
             $reply = 'Menu replies are stopped. Send START to reopen the shopping menu.';
@@ -75,6 +76,8 @@ final class ChatCatalogMenu
             $session->selected_product_id = null;
             $session->update(['opted_out' => false, 'screen' => 'categories', 'page' => 1, 'category_id' => null]);
             $reply = $this->categories($channel, $session, true);
+        } elseif (($checkoutReply = $this->checkout->respond($channel, $session, trim($text))) !== null) {
+            $reply = $checkoutReply;
         } elseif (($cartReply = $this->cart->respond($channel, $session, $command)) !== null) {
             $reply = $cartReply;
         } elseif ($command === 'NEXT' || $command === 'PREV') {
@@ -187,7 +190,7 @@ final class ChatCatalogMenu
             .$this->short($p->name, 55).' — '.Money::format($p->price_minor, $p->currency))->implode("\n");
 
         return '🛒 '.$this->short($label, 75)." (page {$session->page}/{$pages}):\n".$rows
-            ."\n\nReply with a number for details, NEXT, PREV or BACK.\nChoose a product number for details, then ADD to your cart.";
+            ."\n\nReply with a number for details, NEXT, PREV or BACK.\nChoose a product number for details, then ADD. Send CART or CHECKOUT when ready.";
     }
 
     private function detail(Product $product): string
@@ -220,7 +223,7 @@ final class ChatCatalogMenu
             }
         }
 
-        return $this->short($message, 3700)."\n\nReply ADD or ADD 2 to add to cart, BACK for products or MENU for categories.\nCheckout is not available yet.";
+        return $this->short($message, 3700)."\n\nReply ADD or ADD 2 to add to cart, BACK for products or MENU for categories.\nSend CHECKOUT when ready.";
     }
 
     private function eligibleProducts(MessagingChannel $channel, ?int $categoryId): Builder
