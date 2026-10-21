@@ -6,6 +6,7 @@ use App\Jobs\SendCommerceMessage;
 use App\Models\Merchant;
 use App\Models\MessagingChannel;
 use App\Models\OutboundMessage;
+use App\Models\MerchantSubscription;
 use App\Saas\MerchantEntitlements;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -34,6 +35,13 @@ final class CommerceOutbox
         }
 
         return DB::transaction(function () use ($merchant, $channel, $recipient, $text, $idempotencyKey): OutboundMessage {
+            // Acquire one tenant-wide database mutex before looking up the
+            // idempotency key. Without this, two concurrent requests can both
+            // observe "missing", then consume quota twice before one hits the
+            // unique-key constraint. MySQL InnoDB serializes these requests.
+            MerchantSubscription::where('merchant_id', $merchant->id)
+                ->lockForUpdate()->firstOrFail();
+
             $existing = OutboundMessage::where('merchant_id', $merchant->id)
                 ->where('idempotency_key', $idempotencyKey)->first();
             if ($existing) {

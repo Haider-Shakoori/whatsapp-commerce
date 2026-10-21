@@ -85,6 +85,12 @@ final class RelayWaClient
 
     public function request(MessagingChannel $channel, string $method, string $path, array $body = []): Response
     {
+        // Defense in depth: even unexpected/malformed channel IDs never reach
+        // the HTTP client or become part of an outbound path.
+        if (! preg_match('/^[a-f0-9-]{36}$/iD', (string) $channel->external_account_id)) {
+            throw new RuntimeException('Invalid configured RelayWA session identifier.');
+        }
+
         $base = rtrim((string) config('commerce.relaywa_base_url'), '/');
         $parts = parse_url($base);
         if ($base === '' || ! is_array($parts) || ($parts['scheme'] ?? null) !== 'https'
@@ -93,6 +99,11 @@ final class RelayWaClient
             || in_array(strtolower($parts['host']), ['localhost', '127.0.0.1', '::1'], true)
             || filter_var($parts['host'], FILTER_VALIDATE_IP)) {
             throw new RuntimeException('A trusted HTTPS RelayWA base URL must be configured by the platform.');
+        }
+
+        $allowedHost = (string) config('commerce.relaywa_allowed_host', '');
+        if ($allowedHost !== '' && strcasecmp((string) $parts['host'], $allowedHost) !== 0) {
+            throw new RuntimeException('RelayWA destination host does not match the configured platform allowlist.');
         }
 
         $credentials = $channel->credentials ?? [];
