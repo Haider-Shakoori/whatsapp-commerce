@@ -4,8 +4,6 @@ namespace Tests\Feature;
 
 use App\Messaging\CommerceOutbox;
 use App\Models\Merchant;
-use App\Models\MerchantSubscription;
-use App\Models\SubscriptionInvoice;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Saas\Exceptions\SubscriptionLimitException;

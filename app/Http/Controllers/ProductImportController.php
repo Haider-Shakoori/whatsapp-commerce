@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Merchant;
-use App\Saas\MerchantEntitlements;
 use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,48 +89,48 @@ class ProductImportController extends Controller
             [$created, $updated] = DB::transaction(function () use ($records, $merchant, $entitlements): array {
                 $existing = $merchant->products()->whereIn('sku', array_column($records, 'sku'))->pluck('sku')->all();
                 $entitlements->assertCapacity($merchant, 'products', count($records) - count($existing));
-            $created = 0;
-            $updated = 0;
-            foreach ($records as $row) {
-                $categoryId = null;
-                if ($row['category'] !== '') {
-                    $slug = Str::slug($row['category']);
-                    if ($slug === '') {
-                        throw ValidationException::withMessages(['file' => 'Invalid category slug.']);
+                $created = 0;
+                $updated = 0;
+                foreach ($records as $row) {
+                    $categoryId = null;
+                    if ($row['category'] !== '') {
+                        $slug = Str::slug($row['category']);
+                        if ($slug === '') {
+                            throw ValidationException::withMessages(['file' => 'Invalid category slug.']);
+                        }
+                        $category = $merchant->categories()->firstOrCreate(['slug' => $slug], ['name' => $row['category']]);
+                        $categoryId = $category->id;
                     }
-                    $category = $merchant->categories()->firstOrCreate(['slug' => $slug], ['name' => $row['category']]);
-                    $categoryId = $category->id;
+                    $product = $merchant->products()->where('sku', $row['sku'])->first();
+                    if ($product) {
+                        // Stock is intentionally not overwritten during reimports: adjustments must be audited.
+                        $product->update([
+                            'name' => $row['name'], 'description' => $row['description'],
+                            'price_minor' => $row['price_minor'], 'category_id' => $categoryId,
+                            'is_active' => $row['is_active'],
+                        ]);
+                        $updated++;
+                    } else {
+                        $base = Str::slug($row['name']);
+                        if ($base === '') {
+                            throw ValidationException::withMessages(['file' => 'Product name cannot generate a URL slug.']);
+                        }
+                        $slug = $base;
+                        $suffix = 2;
+                        while ($merchant->products()->where('slug', $slug)->exists()) {
+                            $slug = $base.'-'.$suffix++;
+                        }
+                        $merchant->products()->create([
+                            'name' => $row['name'], 'slug' => $slug, 'sku' => $row['sku'],
+                            'description' => $row['description'], 'price_minor' => $row['price_minor'],
+                            'currency' => $merchant->currency, 'stock_quantity' => $row['stock_quantity'],
+                            'category_id' => $categoryId, 'is_active' => $row['is_active'],
+                        ]);
+                        $created++;
+                    }
                 }
-                $product = $merchant->products()->where('sku', $row['sku'])->first();
-                if ($product) {
-                    // Stock is intentionally not overwritten during reimports: adjustments must be audited.
-                    $product->update([
-                        'name' => $row['name'], 'description' => $row['description'],
-                        'price_minor' => $row['price_minor'], 'category_id' => $categoryId,
-                        'is_active' => $row['is_active'],
-                    ]);
-                    $updated++;
-                } else {
-                    $base = Str::slug($row['name']);
-                    if ($base === '') {
-                        throw ValidationException::withMessages(['file' => 'Product name cannot generate a URL slug.']);
-                    }
-                    $slug = $base;
-                    $suffix = 2;
-                    while ($merchant->products()->where('slug', $slug)->exists()) {
-                        $slug = $base.'-'.$suffix++;
-                    }
-                    $merchant->products()->create([
-                        'name' => $row['name'], 'slug' => $slug, 'sku' => $row['sku'],
-                        'description' => $row['description'], 'price_minor' => $row['price_minor'],
-                        'currency' => $merchant->currency, 'stock_quantity' => $row['stock_quantity'],
-                        'category_id' => $categoryId, 'is_active' => $row['is_active'],
-                    ]);
-                    $created++;
-                }
-            }
 
-            return [$created, $updated];
+                return [$created, $updated];
             });
         } catch (SubscriptionLimitException $e) {
             throw ValidationException::withMessages(['file' => $e->getMessage()]);

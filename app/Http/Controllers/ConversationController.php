@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Messaging\CommerceOutbox;
-use App\Saas\Exceptions\SubscriptionLimitException;
 use App\Models\Conversation;
 use App\Models\Merchant;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

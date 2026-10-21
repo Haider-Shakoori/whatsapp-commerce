@@ -3,10 +3,10 @@
 namespace App\Messaging;
 
 use App\Jobs\SendCommerceMessage;
-use App\Saas\MerchantEntitlements;
 use App\Models\Merchant;
 use App\Models\MessagingChannel;
 use App\Models\OutboundMessage;
+use App\Saas\MerchantEntitlements;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;

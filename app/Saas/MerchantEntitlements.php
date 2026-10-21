@@ -6,7 +6,6 @@ use App\Models\Merchant;
 use App\Models\MerchantSubscription;
 use App\Models\SubscriptionUsage;
 use App\Saas\Exceptions\SubscriptionLimitException;
-use Illuminate\Support\Facades\DB;
 
 final class MerchantEntitlements
 {

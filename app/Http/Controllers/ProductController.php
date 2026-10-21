@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Merchant;
 use App\Models\Product;
-use App\Saas\MerchantEntitlements;
 use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -48,10 +48,10 @@ class ProductController extends Controller
             DB::transaction(function () use ($entitlements, $merchant, $data, $slug, $request): void {
                 $entitlements->assertCapacity($merchant, 'products');
                 $merchant->products()->create([
-            ...$data,
-            'slug' => $slug,
-            'currency' => $merchant->currency,
-            'is_active' => $request->boolean('is_active', true),
+                    ...$data,
+                    'slug' => $slug,
+                    'currency' => $merchant->currency,
+                    'is_active' => $request->boolean('is_active', true),
                 ]);
             });
         } catch (SubscriptionLimitException $e) {

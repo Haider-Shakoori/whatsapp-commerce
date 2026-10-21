@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Messaging\RelayWaClient;
-use App\Saas\MerchantEntitlements;
-use App\Saas\Exceptions\SubscriptionLimitException;
 use App\Models\Merchant;
 use App\Models\MessagingChannel;
+use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,13 +61,13 @@ class RelayWaChannelController extends Controller
             DB::transaction(function () use ($merchant, $entitlements, $data, $status): void {
                 $entitlements->assertCapacity($merchant, 'channels');
                 $merchant->messagingChannels()->create([
-            'provider' => 'relaywa',
-            'public_id' => (string) Str::uuid(),
-            'external_account_id' => $data['session_id'],
-            'display_name' => $data['display_name'],
-            'credentials' => ['api_key' => $data['api_key']],
-            'status' => $status,
-            'status_checked_at' => now(),
+                    'provider' => 'relaywa',
+                    'public_id' => (string) Str::uuid(),
+                    'external_account_id' => $data['session_id'],
+                    'display_name' => $data['display_name'],
+                    'credentials' => ['api_key' => $data['api_key']],
+                    'status' => $status,
+                    'status_checked_at' => now(),
                 ]);
             });
         } catch (SubscriptionLimitException $e) {
