@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AutomationController;
-use App\Http\Controllers\ConversationAutomationController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ConversationAutomationController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
