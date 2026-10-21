@@ -12,11 +12,18 @@ class Order extends Model
         'merchant_id', 'messaging_channel_id', 'checkout_key', 'customer_name',
         'customer_phone', 'status', 'payment_status', 'currency', 'subtotal_minor',
         'delivery_minor', 'total_minor', 'delivery_details', 'notes',
+        'cancelled_at', 'cancelled_by',
     ];
 
     protected function casts(): array
     {
-        return ['delivery_details' => 'array', 'subtotal_minor' => 'integer', 'delivery_minor' => 'integer', 'total_minor' => 'integer'];
+        return [
+            'delivery_details' => 'array',
+            'subtotal_minor' => 'integer',
+            'delivery_minor' => 'integer',
+            'total_minor' => 'integer',
+            'cancelled_at' => 'datetime',
+        ];
     }
 
     public function merchant(): BelongsTo
