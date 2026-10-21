@@ -12,6 +12,9 @@ use App\Models\PlatformAuditLog;
 use App\Models\PlatformSetting;
 use App\Models\SubscriptionEvent;
 use App\Models\SubscriptionInvoice;
+use App\Models\SubscriptionPlan;
+use App\Models\Customer;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,9 +23,42 @@ use Illuminate\View\View;
 
 class PlatformAdminController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $since = now()->subDays(30);
+        $filters = $request->validate([
+            'days' => ['nullable', 'integer', 'in:7,30,90'],
+        ]);
+        $days = (int) ($filters['days'] ?? 30);
+        $startDay = CarbonImmutable::now('UTC')->startOfDay()->subDays($days - 1);
+        $since = $startDay;
+
+        // Every date in the selected period appears even if there is no activity.
+        // Count merchant signups and commerce events separately; these are NOT platform revenue.
+        $seriesDefinitions = [
+            'merchants' => Merchant::query(),
+            'orders' => Order::query(),
+            'inbound' => InboundEvent::query(),
+            'outbound' => OutboundMessage::query(),
+        ];
+        $series = [];
+        foreach ($seriesDefinitions as $name => $query) {
+            $series[$name] = $query->where('created_at', '>=', $since)
+                ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+                ->groupBy(DB::raw('DATE(created_at)'))
+                ->pluck('total', 'day');
+        }
+        $trend = [];
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startDay->addDays($i)->format('Y-m-d');
+            $trend[] = [
+                'day' => $date,
+                'merchants' => (int) ($series['merchants'][$date] ?? 0),
+                'orders' => (int) ($series['orders'][$date] ?? 0),
+                'inbound' => (int) ($series['inbound'][$date] ?? 0),
+                'outbound' => (int) ($series['outbound'][$date] ?? 0),
+            ];
+        }
+        $trendMax = max(1, ...array_map(fn (array $row): int => max($row['orders'], $row['inbound'], $row['outbound']), $trend));
         $daily = OutboundMessage::query()
             ->where('created_at', '>=', $since)
             ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
@@ -56,6 +92,13 @@ class PlatformAdminController extends Controller
             'outboundPaused' => PlatformSetting::enabled('outbound_paused'),
             'registrationPaused' => PlatformSetting::enabled('registration_paused'),
             'subscriptionInvoices' => SubscriptionInvoice::count(),
+            'selectedDays' => $days,
+            'trend' => $trend,
+            'trendMax' => $trendMax,
+            'newMerchantsInPeriod' => $series['merchants']->sum(),
+            'recentMerchants' => Merchant::query()->with('subscription.plan')
+                ->withCount(['orders', 'messagingChannels'])
+                ->latest('id')->limit(6)->get(),
         ]);
     }
 
@@ -64,6 +107,10 @@ class PlatformAdminController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:active,suspended'],
+            'plan' => ['nullable', 'string', 'max:50'],
+            'sort' => ['nullable', 'in:newest,oldest,name,orders'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
         ]);
         $query = Merchant::query()->with('subscription.plan')
             ->withCount(['users', 'messagingChannels', 'products', 'orders']);
@@ -75,9 +122,36 @@ class PlatformAdminController extends Controller
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
+        if ($plan = ($filters['plan'] ?? null)) {
+            if ($plan === 'none') {
+                $query->whereDoesntHave('subscription');
+            } else {
+                // Only an existing plan code is accepted (including non-default custom plans).
+                if (! SubscriptionPlan::where('code', $plan)->exists()) {
+                    throw ValidationException::withMessages(['plan' => 'Unknown subscription plan.']);
+                }
+                $query->whereHas('subscription.plan', fn ($query) => $query->where('code', $plan));
+            }
+        }
+        if (! empty($filters['from'])) {
+            $query->whereDate('created_at', '>=', $filters['from']);
+        }
+        if (! empty($filters['to'])) {
+            $query->whereDate('created_at', '<=', $filters['to']);
+        }
+        match ($filters['sort'] ?? 'newest') {
+            'oldest' => $query->oldest('id'),
+            'name' => $query->orderBy('name')->orderBy('id'),
+            'orders' => $query->orderByDesc('orders_count')->latest('id'),
+            default => $query->latest('id'),
+        };
 
         return view('platform.merchants', [
-            'merchants' => $query->latest('id')->paginate(25)->withQueryString(),
+            'merchants' => $query->paginate(25)->withQueryString(),
+            'plans' => SubscriptionPlan::orderBy('name')->get(['code', 'name']),
+            'merchantTotal' => Merchant::count(),
+            'merchantActive' => Merchant::where('status', 'active')->count(),
+            'merchantSuspended' => Merchant::where('status', 'suspended')->count(),
         ]);
     }
 
@@ -98,6 +172,13 @@ class PlatformAdminController extends Controller
             'monthlyMessages' => $merchant->subscriptionUsages()->where('usage_month', now('UTC')->format('Y-m'))
                 ->value('outbound_count') ?? 0,
             'orderCount' => $merchant->orders()->count(),
+            'productCount' => $merchant->products()->count(),
+            'customerCount' => $merchant->customers()->count(),
+            'conversationCount' => $merchant->conversations()->count(),
+            'inbound30d' => InboundEvent::where('merchant_id', $merchant->id)
+                ->where('created_at', '>=', now()->subDays(30))->count(),
+            'lastOrder' => $merchant->orders()->max('created_at'),
+            'lastInbound' => InboundEvent::where('merchant_id', $merchant->id)->max('created_at'),
         ]);
     }
 

@@ -10,6 +10,7 @@ use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -44,22 +45,49 @@ class ProductController extends Controller
             throw ValidationException::withMessages(['name' => 'Choose a unique product name for this business.']);
         }
 
+        $uploadedPath = null;
+
         try {
-            DB::transaction(function () use ($entitlements, $merchant, $data, $slug, $request): void {
+            DB::transaction(function () use ($entitlements, $merchant, $data, $slug, $request, &$uploadedPath): void {
                 $entitlements->assertCapacity($merchant, 'products');
-                $merchant->products()->create([
+                $product = $merchant->products()->create([
                     ...$data,
                     'slug' => $slug,
                     'currency' => $merchant->currency,
                     'is_active' => $request->boolean('is_active', true),
                 ]);
+
+                if ($request->hasFile('image')) {
+                    $image = $request->file('image');
+                    $uploadedPath = $image->store("merchants/{$merchant->id}/products/{$product->id}", 'public');
+
+                    if (! $uploadedPath) {
+                        throw ValidationException::withMessages(['image' => 'Photo could not be stored. Please try again.']);
+                    }
+
+                    $product->images()->create([
+                        'merchant_id' => $merchant->id,
+                        'disk' => 'public',
+                        'path' => $uploadedPath,
+                        'original_name' => substr($image->getClientOriginalName(), 0, 255),
+                    ]);
+                }
             });
-        } catch (SubscriptionLimitException $e) {
-            throw ValidationException::withMessages(['name' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            // A failed insert/transaction must not leave an orphaned uploaded file.
+            if ($uploadedPath) {
+                Storage::disk('public')->delete($uploadedPath);
+            }
+
+            if ($e instanceof SubscriptionLimitException) {
+                throw ValidationException::withMessages(['name' => $e->getMessage()]);
+            }
+
+            throw $e;
         }
 
         return redirect()->route('merchant.products.index', $merchant)
-            ->with('status', 'Product saved. Open Edit / options to add photos, variants and extras.');
+            ->with('status', $uploadedPath ? 'Product and photo saved.' : 'Product saved. You can add photos, variants and extras in Edit / options.');
     }
 
     public function edit(Merchant $merchant, Product $product): View
@@ -111,6 +139,7 @@ class ProductController extends Controller
             'price_minor' => ['nullable', 'integer', 'min:0', 'max:99999999999'],
             'stock_quantity' => [$creating ? 'nullable' : 'prohibited', 'integer', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
+            'image' => [$creating ? 'nullable' : 'prohibited', 'image', 'mimes:jpeg,png,webp', 'max:4096'],
         ]);
 
         // Old foundation API posts price_minor; the new UI uses a merchant-facing decimal price.
@@ -126,7 +155,7 @@ class ProductController extends Controller
         } elseif (! isset($data['price_minor'])) {
             throw ValidationException::withMessages(['price' => 'A price is required.']);
         }
-        unset($data['price']);
+        unset($data['price'], $data['image']);
 
         if (array_key_exists('sku', $data) && $data['sku'] !== null) {
             $data['sku'] = strtoupper(trim($data['sku']));

@@ -216,4 +216,55 @@ class AdvancedCatalogTest extends TestCase
 
         $this->assertDatabaseCount('products', 0);
     }
+
+    public function test_owner_can_upload_main_photo_when_creating_product(): void
+    {
+        Storage::fake('public');
+        [$owner, $merchant] = $this->merchant('photo-on-create');
+        $this->actingAs($owner)->get(route('merchant.products.create', $merchant))
+            ->assertOk()->assertSee('name="image"', false)->assertSee('multipart/form-data');
+
+        $this->actingAs($owner)->post(route('merchant.products.store', $merchant), [
+            'name' => 'Camera-ready product',
+            'price' => '250.00',
+            'image' => UploadedFile::fake()->image('product.jpg'),
+        ])->assertRedirect(route('merchant.products.index', $merchant));
+
+        $product = $merchant->products()->where('slug', 'camera-ready-product')->firstOrFail();
+        $image = $product->images()->firstOrFail();
+        $this->assertSame($merchant->id, $image->merchant_id);
+        $this->assertSame('public', $image->disk);
+        Storage::disk('public')->assertExists($image->path);
+        $this->assertSame(1, $product->images()->count());
+    }
+
+    public function test_invalid_photo_is_rejected_without_creating_product(): void
+    {
+        Storage::fake('public');
+        [$owner, $merchant] = $this->merchant('photo-validation');
+        $this->actingAs($owner)->post(route('merchant.products.store', $merchant), [
+            'name' => 'Invalid image',
+            'price' => '50.00',
+            'image' => UploadedFile::fake()->create('payload.txt', 5, 'text/plain'),
+        ])->assertSessionHasErrors('image');
+
+        $this->assertDatabaseCount('products', 0);
+        $this->assertDatabaseCount('product_images', 0);
+    }
+
+    public function test_other_tenant_cannot_upload_photo_during_product_creation(): void
+    {
+        Storage::fake('public');
+        [$owner] = $this->merchant('owned');
+        [, $other] = $this->merchant('other-photo-tenant');
+        $this->actingAs($owner)->post(route('merchant.products.store', $other), [
+            'name' => 'Unauthorized image',
+            'price' => '10.00',
+            'image' => UploadedFile::fake()->image('not-mine.jpg'),
+        ])->assertForbidden();
+
+        $this->assertDatabaseCount('product_images', 0);
+        $this->assertDatabaseCount('products', 0);
+    }
+
 }
