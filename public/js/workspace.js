@@ -52,3 +52,33 @@
         setThemeLabel();
     });
 })();
+
+
+// Preview the image selected during merchant product creation.
+(() => {
+    'use strict';
+    const input = document.querySelector('input[type="file"][name="image"]');
+    const preview = document.querySelector('[data-product-photo-preview]');
+    const placeholder = document.querySelector('[data-product-photo-placeholder]');
+    if (!input || !preview || !placeholder) return;
+    let objectUrl = null;
+    input.addEventListener('change', () => {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+        preview.hidden = true;
+        placeholder.hidden = false;
+        const file = input.files && input.files[0];
+        if (!file) return;
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 4 * 1024 * 1024) {
+            input.setCustomValidity('Choose a JPEG, PNG or WebP image smaller than 4 MB.');
+            input.reportValidity();
+            return;
+        }
+        input.setCustomValidity('');
+        objectUrl = URL.createObjectURL(file);
+        preview.src = objectUrl;
+        preview.hidden = false;
+        placeholder.hidden = true;
+    });
+    window.addEventListener('pagehide', () => { if (objectUrl) URL.revokeObjectURL(objectUrl); });
+})();
