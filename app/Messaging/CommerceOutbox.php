@@ -4,9 +4,9 @@ namespace App\Messaging;
 
 use App\Jobs\SendCommerceMessage;
 use App\Models\Merchant;
+use App\Models\MerchantSubscription;
 use App\Models\MessagingChannel;
 use App\Models\OutboundMessage;
-use App\Models\MerchantSubscription;
 use App\Saas\MerchantEntitlements;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
