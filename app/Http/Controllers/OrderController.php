@@ -57,6 +57,11 @@ class OrderController extends Controller
                 throw ValidationException::withMessages(['status' => 'This status transition is not permitted.']);
             }
 
+            if ($target === 'cancelled' && ($order->payment_status === 'paid'
+                || $order->paymentAttempts()->where('method', 'stripe_test')->whereIn('status', ['creating', 'pending'])->exists())) {
+                throw ValidationException::withMessages(['status' => 'A paid order or an outstanding online checkout requires a separate refund/expiry review before cancellation.']);
+            }
+
             if ($target === 'cancelled') {
                 $items = $order->items()->get();
                 $productTotals = $items->filter(fn ($item) => $item->product_id !== null)
