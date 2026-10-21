@@ -10,3 +10,5 @@ Artisan::command('commerce:status', function () {
 Schedule::command('commerce:relaywa:health')->everyFiveMinutes()->withoutOverlapping();
 
 Schedule::command('commerce:payments:reconcile')->everyFifteenMinutes()->withoutOverlapping();
+
+Schedule::command('commerce:automation:followups')->everyMinute()->withoutOverlapping();
