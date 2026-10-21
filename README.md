@@ -95,3 +95,8 @@ Shared per-merchant WhatsApp inbox, encrypted message history, customer profiles
 ## Batch 09 — Automations & AI Drafting
 
 Merchant-controlled keyword/after-hours replies, business hours, routing, one-time consent-based follow-ups, and optional staff-reviewed AI drafts. No AI auto-sending. See docs/AUTOMATION.md.
+
+
+## Batch 10 — SaaS Subscriptions & Billing Foundation
+
+Merchant-level Evaluation, Starter and Growth plans, a bounded 14-day evaluation, entitlement-checked catalog/channel/outbound workflows, message metering, plan-change requests, billing/event history, operator-only manual grants and daily expiry reconciliation. No live SaaS charges, automatically paid invoices or auto-renewals. [Setup and limitations](docs/SAAS_BILLING.md).
