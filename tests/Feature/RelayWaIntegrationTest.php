@@ -184,7 +184,7 @@ class RelayWaIntegrationTest extends TestCase
 
         $message = app(CommerceOutbox::class)->queueText($merchant, $channel, '+93700000000', 'Hello', 'test-uncertain');
         $this->assertDatabaseHas('outbound_messages', ['id' => $message->id, 'status' => 'uncertain', 'attempts' => 1]);
-        (new SendCommerceMessage($message->id))->handle(app(MessagingTransport::class));
+        (new SendCommerceMessage($message->id))->handle(app(MessagingTransport::class), app(\App\Saas\MerchantEntitlements::class));
         Http::assertSentCount(1);
     }
 
