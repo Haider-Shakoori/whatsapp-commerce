@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Messaging\CommerceOutbox;
 use App\Messaging\RelayWaClient;
 use App\Models\Merchant;
-use App\Models\MessagingChannel;
 use App\Models\OutboundMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
