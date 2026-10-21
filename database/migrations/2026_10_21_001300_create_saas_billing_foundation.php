@@ -102,6 +102,24 @@ return new class extends Migration
                 'is_active' => true, 'created_at' => $now, 'updated_at' => $now,
             ],
         ]);
+
+        // Existing merchants are migrated without deleting their original data.
+        // Evaluation is time-limited and cannot silently auto-renew.
+        $trial = DB::table('subscription_plans')->where('code', 'trial')->first();
+        foreach (DB::table('merchants')->select('id')->cursor() as $merchant) {
+            $id = DB::table('merchant_subscriptions')->insertGetId([
+                'merchant_id' => $merchant->id,
+                'subscription_plan_id' => $trial->id,
+                'status' => 'trialing', 'period_start' => $now,
+                'period_end' => $now->copy()->addDays(14),
+                'auto_renew' => false, 'created_at' => $now, 'updated_at' => $now,
+            ]);
+            DB::table('subscription_events')->insert([
+                'merchant_id' => $merchant->id, 'merchant_subscription_id' => $id,
+                'event' => 'trial_backfilled', 'details' => json_encode(['plan' => 'trial']),
+                'created_at' => $now, 'updated_at' => $now,
+            ]);
+        }
     }
 
     public function down(): void
