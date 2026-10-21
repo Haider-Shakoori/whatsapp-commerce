@@ -266,4 +266,56 @@ class AdvancedCatalogTest extends TestCase
         $this->assertDatabaseCount('product_images', 0);
         $this->assertDatabaseCount('products', 0);
     }
+    public function test_new_product_photo_directories_are_web_traversable_under_restrictive_umask(): void
+    {
+        Storage::fake('public');
+        [$owner, $merchant] = $this->merchant('photo-permission');
+
+        $previous = umask(0077);
+        try {
+            $this->actingAs($owner)->post(route('merchant.products.store', $merchant), [
+                'name' => 'Visible Cake',
+                'price' => '25.00',
+                'image' => UploadedFile::fake()->image('cake.jpg'),
+            ])->assertRedirect(route('merchant.products.index', $merchant));
+
+            $image = $merchant->products()->firstOrFail()->images()->firstOrFail();
+            Storage::disk('public')->assertExists($image->path);
+            // Check every intermediary directory, not only the final file.
+            foreach ([
+                'merchants',
+                "merchants/{$merchant->id}",
+                "merchants/{$merchant->id}/products",
+                "merchants/{$merchant->id}/products/{$image->product_id}",
+            ] as $relative) {
+                $folder = Storage::disk('public')->path($relative);
+                clearstatcache(true, $folder);
+                $this->assertSame(5, fileperms($folder) & 0005, $folder.' must be publicly traversable');
+            }
+        } finally {
+            umask($previous);
+        }
+    }
+
+    public function test_existing_product_photo_upload_also_repairs_public_directories(): void
+    {
+        Storage::fake('public');
+        [$owner, $merchant] = $this->merchant('photo-edit-permission');
+        $product = $this->product($merchant);
+
+        $previous = umask(0077);
+        try {
+            $this->actingAs($owner)->post(route('merchant.products.images.store', [$merchant, $product]), [
+                'image' => UploadedFile::fake()->image('cake.jpg'),
+            ])->assertRedirect();
+
+            $image = $product->images()->firstOrFail();
+            Storage::disk('public')->assertExists($image->path);
+            $folder = dirname(Storage::disk('public')->path($image->path));
+            $this->assertSame(5, fileperms($folder) & 0005);
+        } finally {
+            umask($previous);
+        }
+    }
+
 }

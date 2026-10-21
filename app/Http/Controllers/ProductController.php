@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Saas\Exceptions\SubscriptionLimitException;
 use App\Saas\MerchantEntitlements;
 use App\Support\Money;
+use App\Support\PublicProductMedia;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,10 @@ class ProductController extends Controller
                     if (! $uploadedPath) {
                         throw ValidationException::withMessages(['image' => 'Photo could not be stored. Please try again.']);
                     }
+
+                    // Public files require public *directory* traversal permissions.
+                    // Hardened servers can create intermediate folders as 0700.
+                    PublicProductMedia::ensureBrowsableDirectories($merchant, $product);
 
                     $product->images()->create([
                         'merchant_id' => $merchant->id,
