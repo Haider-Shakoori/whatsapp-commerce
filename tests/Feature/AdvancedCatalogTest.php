@@ -156,6 +156,50 @@ class AdvancedCatalogTest extends TestCase
         $this->assertSame($merchant->id, $image->merchant_id);
     }
 
+    public function test_create_form_has_optional_photo_selector(): void
+    {
+        [$owner, $merchant] = $this->merchant('create-photo-form');
+        $this->actingAs($owner)->get(route('merchant.products.create', $merchant))
+            ->assertOk()
+            ->assertSee('enctype="multipart/form-data"', false)
+            ->assertSee('name="image"', false)
+            ->assertSee('product-image-preview');
+    }
+
+    public function test_product_can_be_created_with_photo_in_one_request(): void
+    {
+        Storage::fake('public');
+        [$owner, $merchant] = $this->merchant('create-with-photo');
+
+        $this->actingAs($owner)->post(route('merchant.products.store', $merchant), [
+            'name' => 'Berry Juice',
+            'price' => '120.50',
+            'is_active' => '1',
+            'image' => UploadedFile::fake()->image('bottle.webp'),
+        ])->assertRedirect(route('merchant.products.index', $merchant))
+            ->assertSessionHas('status', 'Product and photo saved.');
+
+        $product = $merchant->products()->where('name', 'Berry Juice')->firstOrFail();
+        $image = $product->images()->firstOrFail();
+        $this->assertSame($merchant->id, $image->merchant_id);
+        $this->assertSame('bottle.webp', $image->original_name);
+        Storage::disk('public')->assertExists($image->path);
+        $this->assertDatabaseHas('products', ['id' => $product->id, 'price_minor' => 12050]);
+    }
+
+    public function test_invalid_image_does_not_create_any_product(): void
+    {
+        Storage::fake('public');
+        [$owner, $merchant] = $this->merchant('invalid-photo');
+        $this->actingAs($owner)->post(route('merchant.products.store', $merchant), [
+            'name' => 'Not Allowed',
+            'price' => '15.00',
+            'image' => UploadedFile::fake()->create('payload.pdf', 50, 'application/pdf'),
+        ])->assertSessionHasErrors('image');
+        $this->assertDatabaseCount('products', 0);
+        $this->assertDatabaseCount('product_images', 0);
+    }
+
     public function test_stock_adjustment_is_audited_and_cannot_go_negative(): void
     {
         [$owner, $merchant] = $this->merchant('stock');
