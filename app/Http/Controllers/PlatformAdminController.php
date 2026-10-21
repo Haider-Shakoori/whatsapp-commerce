@@ -12,6 +12,7 @@ use App\Models\PlatformAuditLog;
 use App\Models\PlatformSetting;
 use App\Models\SubscriptionEvent;
 use App\Models\SubscriptionInvoice;
+use App\Models\SubscriptionPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,9 +21,11 @@ use Illuminate\View\View;
 
 class PlatformAdminController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $since = now()->subDays(30);
+        $filters = $request->validate(['days' => ['nullable', 'in:7,30,90']]);
+        $days = (int) ($filters['days'] ?? 30);
+        $since = now('UTC')->subDays($days);
         $daily = OutboundMessage::query()
             ->where('created_at', '>=', $since)
             ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
@@ -30,7 +33,19 @@ class PlatformAdminController extends Controller
             ->orderBy('day')->get();
 
         return view('platform.index', [
+            'days' => $days,
             'merchants' => Merchant::count(),
+            'merchantsNew' => Merchant::where('created_at', '>=', $since)->count(),
+            'recentMerchants' => Merchant::query()->with('subscription.plan')
+                ->withCount(['orders', 'messagingChannels'])->latest('id')->limit(5)->get(),
+            'subscriptionBreakdown' => MerchantSubscription::query()
+                ->select('status')->selectRaw('COUNT(*) as total')->groupBy('status')
+                ->orderBy('status')->get(),
+            'orderTrend' => Order::query()->where('created_at', '>=', $since)
+                ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+                ->groupBy(DB::raw('DATE(created_at)'))->orderBy('day')->get(),
+            'outboundTrend' => $daily,
+
             'activeMerchants' => Merchant::where('status', 'active')->count(),
             'trialing' => MerchantSubscription::where('status', 'trialing')
                 ->where('period_end', '>', now())->count(),
@@ -64,6 +79,10 @@ class PlatformAdminController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:active,suspended'],
+            'plan' => ['nullable', 'string', 'max:80'],
+            'sort' => ['nullable', 'in:newest,oldest,name,orders'],
+            'created_from' => ['nullable', 'date_format:Y-m-d'],
+
         ]);
         $query = Merchant::query()->with('subscription.plan')
             ->withCount(['users', 'messagingChannels', 'products', 'orders']);
@@ -75,9 +94,22 @@ class PlatformAdminController extends Controller
         if (isset($filters['status'])) {
             $query->where('status', $filters['status']);
         }
+        if ($plan = ($filters['plan'] ?? null)) {
+            $query->whereHas('subscription.plan', fn ($q) => $q->where('code', $plan));
+        }
+        if ($createdFrom = ($filters['created_from'] ?? null)) {
+            $query->whereDate('created_at', '>=', $createdFrom);
+        }
+        match ($filters['sort'] ?? 'newest') {
+            'oldest' => $query->oldest('id'),
+            'name' => $query->orderBy('name')->orderBy('id'),
+            'orders' => $query->orderByDesc('orders_count')->orderByDesc('id'),
+            default => $query->latest('id'),
+        };
 
         return view('platform.merchants', [
-            'merchants' => $query->latest('id')->paginate(25)->withQueryString(),
+            'plans' => SubscriptionPlan::query()->orderBy('name')->get(['name', 'code']),
+            'merchants' => $query->paginate(25)->withQueryString(),
         ]);
     }
 
@@ -98,6 +130,11 @@ class PlatformAdminController extends Controller
             'monthlyMessages' => $merchant->subscriptionUsages()->where('usage_month', now('UTC')->format('Y-m'))
                 ->value('outbound_count') ?? 0,
             'orderCount' => $merchant->orders()->count(),
+            'productCount' => $merchant->products()->count(),
+            'customerCount' => $merchant->customers()->count(),
+            'channelCount' => $merchant->messagingChannels()->count(),
+            'recentOrders' => $merchant->orders()->latest('id')->limit(5)->get(['id', 'status', 'created_at']),
+
         ]);
     }
 

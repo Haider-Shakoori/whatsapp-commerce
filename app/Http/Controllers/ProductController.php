@@ -10,11 +10,13 @@ use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use InvalidArgumentException;
+use Throwable;
 
 class ProductController extends Controller
 {
@@ -44,22 +46,50 @@ class ProductController extends Controller
             throw ValidationException::withMessages(['name' => 'Choose a unique product name for this business.']);
         }
 
+        // A cover image may be attached during initial creation. The existing
+        // Edit Product photo gallery continues to support additional images.
+        $validatedImage = $request->validate([
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:4096'],
+        ]);
+        $image = $validatedImage['image'] ?? null;
+        $imagePath = null;
+
         try {
-            DB::transaction(function () use ($entitlements, $merchant, $data, $slug, $request): void {
+            DB::transaction(function () use ($entitlements, $merchant, $data, $slug, $request, $image, &$imagePath): void {
                 $entitlements->assertCapacity($merchant, 'products');
-                $merchant->products()->create([
+                $product = $merchant->products()->create([
                     ...$data,
                     'slug' => $slug,
                     'currency' => $merchant->currency,
                     'is_active' => $request->boolean('is_active', true),
                 ]);
+                if ($image) {
+                    $imagePath = $image->store("merchants/{$merchant->id}/products/{$product->id}", 'public');
+                    if (! $imagePath) {
+                        throw ValidationException::withMessages(['image' => 'The photo could not be saved.']);
+                    }
+                    $product->images()->create([
+                        'merchant_id' => $merchant->id,
+                        'disk' => 'public',
+                        'path' => $imagePath,
+                        'original_name' => substr($image->getClientOriginalName(), 0, 255),
+                    ]);
+                }
             });
         } catch (SubscriptionLimitException $e) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
             throw ValidationException::withMessages(['name' => $e->getMessage()]);
+        } catch (Throwable $e) {
+            if ($imagePath) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            throw $e;
         }
 
         return redirect()->route('merchant.products.index', $merchant)
-            ->with('status', 'Product saved. Open Edit / options to add photos, variants and extras.');
+            ->with('status', $image ? 'Product and photo saved. You can add more photos under Edit / options.' : 'Product saved. Open Edit / options to add photos, variants and extras.');
     }
 
     public function edit(Merchant $merchant, Product $product): View

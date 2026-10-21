@@ -1,20 +1,44 @@
 @extends('layouts.app')
 @section('title', 'Merchant overview · '.$merchant->name)
 @section('content')
-<a href="{{ route('platform.merchants.index') }}">&larr; Merchant directory</a>
-<h1 style="margin-top:14px">{{ $merchant->name }}</h1>
-@include('platform.partials.nav')
-<p><strong>Status:</strong> {{ $merchant->status }} · <strong>Type:</strong> {{ $merchant->business_type }} · <strong>Currency:</strong> {{ $merchant->currency }} · <strong>Timezone:</strong> {{ $merchant->timezone }}</p>
-<p class="muted">Admins can review operational metadata, not decrypted chat content, credentials or customer notes.</p>
+<div class="ws-page-intro">
+    <div>
+        <a href="{{ route('platform.merchants.index') }}">&larr; Merchant directory</a>
+        <span class="ws-eyebrow" style="margin-top:13px">MERCHANT 360° PROFILE</span>
+        <h1>{{ $merchant->name }}</h1>
+        <p>{{ ucfirst($merchant->business_type) }} · {{ $merchant->currency }} · {{ $merchant->timezone }}</p>
+    </div>
+    <span class="pill {{ $merchant->status !== 'active' ? 'off' : '' }}">{{ ucfirst($merchant->status) }}</span>
+</div>
+<div class="ws-metric-grid" style="margin-bottom:20px">
+    @foreach([
+        ['label' => 'Products', 'value' => $productCount],
+        ['label' => 'Customers', 'value' => $customerCount],
+        ['label' => 'Recorded orders', 'value' => $orderCount],
+        ['label' => 'WhatsApp channels', 'value' => $channelCount],
+    ] as $stat)
+        <div class="card ws-metric"><span class="ws-stat-label">{{ $stat['label'] }}</span><strong class="ws-metric-value">{{ number_format($stat['value']) }}</strong></div>
+    @endforeach
+</div>
+<p class="muted">This administrative view contains operational metadata only. Private customer chats, API credentials and customer notes are not displayed.</p>
 <div class="grid" style="align-items:start">
 <div class="card">
 <h2>Team members</h2>
-@foreach($team as $member)<p>{{ $member->name }} ({{ $member->email }}) · {{ $member->pivot->role }}</p>@endforeach
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>
+@forelse($team as $member)<tr><td>{{ $member->name }}</td><td>{{ $member->email }}</td><td>{{ ucfirst($member->pivot->role) }}</td></tr>
+@empty<tr><td colspan="3">No team members.</td></tr>@endforelse
+</tbody></table></div>
 <h2 style="margin-top:20px">Subscription</h2>
 <p><strong>{{ $merchant->subscription?->plan?->name ?? 'No plan' }}</strong> · {{ $merchant->subscription?->status ?? 'No status' }}</p>
 <p>Expires: {{ $merchant->subscription?->period_end?->format('Y-m-d H:i') ?? '—' }} UTC</p>
 <p>Current month outbound queued: {{ $monthlyMessages }}</p>
 <p>Orders recorded: {{ $orderCount }}</p>
+<h3>Recent orders</h3>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Status</th><th>Created (UTC)</th></tr></thead><tbody>
+@forelse($recentOrders as $order)
+<tr><td>#{{ $order->id }}</td><td>{{ ucfirst($order->status) }}</td><td>{{ $order->created_at?->format('Y-m-d H:i') ?? '—' }}</td></tr>
+@empty <tr><td colspan="3">No orders recorded.</td></tr> @endforelse
+</tbody></table></div>
 <h3 style="margin-top:20px">Channel status</h3>
 @forelse($channelCounts as $status => $count)<p>{{ $status }} · {{ $count }}</p>@empty<p>No channels</p>@endforelse
 <h3 style="margin-top:20px">Outbound state · last 30 days</h3>
