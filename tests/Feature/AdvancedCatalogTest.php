@@ -266,6 +266,7 @@ class AdvancedCatalogTest extends TestCase
         $this->assertDatabaseCount('product_images', 0);
         $this->assertDatabaseCount('products', 0);
     }
+
     public function test_new_product_photo_directories_are_web_traversable_under_restrictive_umask(): void
     {
         Storage::fake('public');
@@ -317,5 +318,4 @@ class AdvancedCatalogTest extends TestCase
             umask($previous);
         }
     }
-
 }
