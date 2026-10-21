@@ -272,5 +272,4 @@ class PlatformAdministrationTest extends TestCase
             ->assertSee('Outbound state')
             ->assertDontSee('93700123456');
     }
-
 }

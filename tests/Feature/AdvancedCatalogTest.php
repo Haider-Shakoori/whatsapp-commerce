@@ -266,5 +266,4 @@ class AdvancedCatalogTest extends TestCase
         $this->assertDatabaseCount('product_images', 0);
         $this->assertDatabaseCount('products', 0);
     }
-
 }

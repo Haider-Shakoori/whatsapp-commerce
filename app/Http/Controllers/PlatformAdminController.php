@@ -13,7 +13,6 @@ use App\Models\PlatformSetting;
 use App\Models\SubscriptionEvent;
 use App\Models\SubscriptionInvoice;
 use App\Models\SubscriptionPlan;
-use App\Models\Customer;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
