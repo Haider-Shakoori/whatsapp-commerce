@@ -261,4 +261,42 @@ class OrderCheckoutTest extends TestCase
         $this->assertDatabaseCount('orders', 1);
         $this->assertSame(4, $product->fresh()->stock_quantity);
     }
+
+    public function test_variant_and_modifier_stock_are_restored_on_order_cancellation(): void
+    {
+        [$owner, $merchant, $channel] = $this->shop('variants');
+        $product = $this->product($merchant, 'Pizza', 10, 25000);
+        $variant = $product->variants()->create([
+            'merchant_id' => $merchant->id, 'name' => 'Large',
+            'price_delta_minor' => 5000, 'stock_quantity' => 3, 'is_active' => true,
+        ]);
+        $group = $product->modifierGroups()->create([
+            'merchant_id' => $merchant->id, 'name' => 'Toppings',
+            'min_choices' => 1, 'max_choices' => 1,
+        ]);
+        $group->options()->create([
+            'merchant_id' => $merchant->id, 'name' => 'Olives', 'price_minor' => 1000,
+        ]);
+        $this->say($channel, 'MENU');
+        $this->say($channel, '1');
+        $this->say($channel, '1');
+        $this->say($channel, 'ADD 2');
+        $this->say($channel, '1');
+        $this->say($channel, '1');
+        $this->say($channel, 'CHECKOUT');
+        $this->say($channel, 'Pizza Buyer');
+        $this->say($channel, 'PICKUP');
+        $this->say($channel, 'CONFIRM');
+
+        $order = Order::firstOrFail();
+        $this->assertSame(62000, $order->total_minor);
+        $this->assertSame(31000, $order->items()->firstOrFail()->unit_price_minor);
+        $this->assertSame(8, $product->fresh()->stock_quantity);
+        $this->assertSame(1, $variant->fresh()->stock_quantity);
+
+        $this->actingAs($owner)->patch(route('merchant.orders.status', [$merchant, $order]),
+            ['status' => 'cancelled'])->assertRedirect();
+        $this->assertSame(10, $product->fresh()->stock_quantity);
+        $this->assertSame(3, $variant->fresh()->stock_quantity);
+    }
 }
