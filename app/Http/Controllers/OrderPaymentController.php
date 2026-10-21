@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Merchant;
-use App\Models\MerchantPaymentSetting;
 use App\Models\Order;
 use App\Models\PaymentAttempt;
 use App\Payments\PaymentSettlement;

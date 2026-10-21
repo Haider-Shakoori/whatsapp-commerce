@@ -28,6 +28,7 @@ final class PaymentSettlement
                 || $attempt->currency !== $order->currency
                 || $attempt->amount_minor !== $order->total_minor) {
                 $attempt->update(['status' => 'review', 'review_note' => 'Mismatch in Stripe checkout identity, currency or amount.']);
+
                 return 'review';
             }
 
@@ -36,6 +37,7 @@ final class PaymentSettlement
             ], true)) {
                 if ($order->status === 'cancelled') {
                     $attempt->update(['status' => 'review', 'review_note' => 'Paid after cancellation; refund requires manual review.']);
+
                     return 'review';
                 }
                 if ($order->payment_status === 'paid') {
@@ -48,15 +50,18 @@ final class PaymentSettlement
                     'verified_at' => now(),
                 ]);
                 $order->update(['payment_status' => 'paid']);
+
                 return 'paid';
             }
 
             if (($session['status'] ?? '') === 'expired' && $attempt->status !== 'paid') {
                 $attempt->update(['status' => 'expired']);
+
                 return 'expired';
             }
             if ($eventType === 'checkout.session.async_payment_failed' && $attempt->status !== 'paid') {
                 $attempt->update(['status' => 'failed']);
+
                 return 'failed';
             }
 

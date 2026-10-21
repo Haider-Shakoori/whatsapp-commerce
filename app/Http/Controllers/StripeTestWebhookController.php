@@ -42,6 +42,7 @@ class StripeTestWebhookController extends Controller
             'checkout.session.async_payment_failed', 'checkout.session.expired',
         ], true) || ($object['object'] ?? null) !== 'checkout.session') {
             $record->update(['outcome' => 'ignored']);
+
             return response()->json(['received' => true], 200);
         }
 
@@ -50,6 +51,7 @@ class StripeTestWebhookController extends Controller
 
         if (! $attempt) {
             $record->update(['outcome' => 'unmatched']);
+
             return response()->json(['received' => true], 200);
         }
 
