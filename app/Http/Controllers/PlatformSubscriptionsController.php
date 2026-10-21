@@ -37,6 +37,7 @@ class PlatformSubscriptionsController extends Controller
             'months' => ['required', 'integer', 'between:1,24'],
             'confirmation' => ['required', 'string'],
             'reason' => ['required', 'string', 'min:10', 'max:250'],
+            'current_password' => ['required', 'current_password'],
         ]);
         if ($data['confirmation'] !== 'GRANT') {
             throw ValidationException::withMessages(['confirmation' => 'Type GRANT to confirm entitlement only.']);

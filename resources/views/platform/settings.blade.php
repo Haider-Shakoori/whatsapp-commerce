@@ -14,6 +14,7 @@
 <div class="field"><label><input type="checkbox" name="outbound_paused" value="1" @checked($outboundPaused)> Pause outgoing WhatsApp messages</label>
 <small class="muted">Blocks new outgoing queue entries and checks again before pending queue workers send. Does not retract already delivered messages.</small></div>
 <div class="field"><label for="reason">Change reason (audited)</label><textarea id="reason" name="reason" minlength="10" maxlength="250" rows="3" required></textarea></div>
+<div class="field"><label for="password">Confirm account password</label><input id="password" name="current_password" type="password" autocomplete="current-password" required></div>
 <div class="field"><label for="confirmation">Type APPLY to confirm</label><input id="confirmation" name="confirmation" required></div>
 <button class="btn" type="submit">Apply safety settings</button>
 </form>

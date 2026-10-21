@@ -107,6 +107,7 @@ class PlatformAdminController extends Controller
             'status' => ['required', 'in:active,suspended'],
             'confirmation' => ['required', 'string'],
             'reason' => ['required', 'string', 'min:10', 'max:250'],
+            'current_password' => ['required', 'current_password'],
         ]);
         $expected = $data['status'] === 'suspended' ? 'SUSPEND' : 'REACTIVATE';
         if ($data['confirmation'] !== $expected) {

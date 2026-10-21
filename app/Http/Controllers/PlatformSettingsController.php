@@ -26,6 +26,7 @@ class PlatformSettingsController extends Controller
             'registration_paused' => ['required', 'boolean'],
             'outbound_paused' => ['required', 'boolean'],
             'reason' => ['required', 'string', 'min:10', 'max:250'],
+            'current_password' => ['required', 'current_password'],
             'confirmation' => ['required', 'string'],
         ]);
         if ($data['confirmation'] !== 'APPLY') {

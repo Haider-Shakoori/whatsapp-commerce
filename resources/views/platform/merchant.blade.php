@@ -35,6 +35,7 @@
 @csrf
 <input type="hidden" name="status" value="{{ $merchant->status === 'active' ? 'suspended' : 'active' }}">
 <div class="field"><label for="status_reason">Reason (audited)</label><textarea id="status_reason" name="reason" minlength="10" maxlength="250" rows="3" required></textarea></div>
+<div class="field"><label for="status_password">Confirm account password</label><input id="status_password" name="current_password" type="password" autocomplete="current-password" required></div>
 <div class="field"><label for="confirmation">Type {{ $merchant->status === 'active' ? 'SUSPEND' : 'REACTIVATE' }}</label><input id="confirmation" name="confirmation" required></div>
 <button class="btn btn-light" type="submit">Confirm status change</button>
 </form>
@@ -45,6 +46,7 @@
 <div class="field"><label for="plan_code">Plan</label><select id="plan_code" name="plan_code"><option value="starter">Starter</option><option value="growth">Growth</option></select></div>
 <div class="field"><label for="months">Duration in months (1–24)</label><input id="months" name="months" type="number" min="1" max="24" value="1" required></div>
 <div class="field"><label for="grant_reason">Reason (audited)</label><textarea id="grant_reason" name="reason" minlength="10" maxlength="250" rows="3" required></textarea></div>
+<div class="field"><label for="grant_password">Confirm account password</label><input id="grant_password" name="current_password" type="password" autocomplete="current-password" required></div>
 <div class="field"><label for="grant_confirmation">Type GRANT</label><input id="grant_confirmation" name="confirmation" required></div>
 <button class="btn btn-light" type="submit">Grant entitlement — no payment</button>
 </form>
