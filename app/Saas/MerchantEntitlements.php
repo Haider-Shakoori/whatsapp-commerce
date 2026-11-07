@@ -4,6 +4,7 @@ namespace App\Saas;
 
 use App\Models\Merchant;
 use App\Models\MerchantSubscription;
+use App\Models\PlatformSetting;
 use App\Models\SubscriptionUsage;
 use App\Saas\Exceptions\SubscriptionLimitException;
 
@@ -12,7 +13,8 @@ final class MerchantEntitlements
     public function current(Merchant $merchant): MerchantSubscription
     {
         $subscription = $merchant->subscription()->with('plan')->first();
-        if (! $subscription || ! $subscription->isEntitled() || ! $subscription->plan?->is_active) {
+        if ($merchant->fresh()?->status !== 'active'
+            || ! $subscription || ! $subscription->isEntitled() || ! $subscription->plan?->is_active) {
             throw new SubscriptionLimitException('Your subscription is not active. Review billing or contact support.');
         }
 
@@ -40,7 +42,8 @@ final class MerchantEntitlements
     {
         $subscription = MerchantSubscription::where('merchant_id', $merchant->id)
             ->lockForUpdate()->first();
-        if (! $subscription || ! $subscription->isEntitled() || ! $subscription->plan?->is_active) {
+        if ($merchant->fresh()?->status !== 'active'
+            || ! $subscription || ! $subscription->isEntitled() || ! $subscription->plan?->is_active) {
             throw new SubscriptionLimitException('Your subscription is inactive or expired.');
         }
         [$used, $limit] = match ($resource) {
@@ -58,11 +61,22 @@ final class MerchantEntitlements
      * Count only newly queued messages; duplicate idempotency keys are not charged.
      * UTC month YYYY-MM is the metering period, not the subscription renewal date.
      */
+    public function assertOutboundAllowed(Merchant $merchant): void
+    {
+        if (PlatformSetting::enabled('outbound_paused')) {
+            throw new SubscriptionLimitException('Platform outbound messaging is temporarily paused.');
+        }
+
+        $this->current($merchant);
+    }
+
     public function consumeOutbound(Merchant $merchant): void
     {
+        $this->assertOutboundAllowed($merchant);
         $subscription = MerchantSubscription::where('merchant_id', $merchant->id)
             ->lockForUpdate()->first();
-        if (! $subscription || ! $subscription->isEntitled() || ! $subscription->plan?->is_active) {
+        if ($merchant->fresh()?->status !== 'active'
+            || ! $subscription || ! $subscription->isEntitled() || ! $subscription->plan?->is_active) {
             throw new SubscriptionLimitException('Subscription inactive; sending is disabled.');
         }
 

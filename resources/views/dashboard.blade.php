@@ -2,6 +2,12 @@
 @section('title', 'My businesses')
 @section('content')
 <div class="actions"><div><h1>My businesses</h1><p class="muted">Choose a workspace to manage its catalog.</p></div></div>
+@if($isPlatformAdmin)
+<div class="card" style="margin-bottom:18px">
+<h2>Platform administration</h2><p class="muted">Global merchant, subscription, delivery health and safety controls.</p>
+<a class="btn" href="{{ route('platform.index') }}">Open platform dashboard</a>
+</div>
+@endif
 <div class="grid">
     @forelse($merchants as $merchant)
         <div class="card">

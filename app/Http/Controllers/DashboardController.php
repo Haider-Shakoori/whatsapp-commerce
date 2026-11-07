@@ -10,6 +10,7 @@ class DashboardController extends Controller
     {
         return view('dashboard', [
             'merchants' => auth()->user()->merchants()->orderBy('name')->get(),
+            'isPlatformAdmin' => auth()->user()->platformAdministrator()->exists(),
         ]);
     }
 }

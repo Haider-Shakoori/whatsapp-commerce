@@ -53,7 +53,7 @@ class SendCommerceMessage implements ShouldQueue
         }
 
         try {
-            $entitlements->current($channel->merchant);
+            $entitlements->assertOutboundAllowed($channel->merchant);
             $providerId = $transport->sendText(
                 $channel,
                 $claimed->recipient,
