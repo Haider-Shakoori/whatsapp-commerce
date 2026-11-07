@@ -33,4 +33,9 @@ class MessagingChannel extends Model
     {
         return $this->hasMany(ChatMenuSession::class, 'messaging_channel_id');
     }
+
+    public function carts(): HasMany
+    {
+        return $this->hasMany(ShoppingCart::class, 'messaging_channel_id');
+    }
 }

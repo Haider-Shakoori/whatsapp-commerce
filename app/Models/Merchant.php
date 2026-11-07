@@ -39,4 +39,9 @@ class Merchant extends Model
     {
         return $this->hasMany(MessagingChannel::class);
     }
+
+    public function carts(): HasMany
+    {
+        return $this->hasMany(ShoppingCart::class);
+    }
 }
