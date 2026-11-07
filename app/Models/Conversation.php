@@ -10,12 +10,12 @@ class Conversation extends Model
 {
     protected $fillable = [
         'merchant_id', 'messaging_channel_id', 'customer_id', 'assigned_to',
-        'status', 'unread_count', 'last_message_at',
+        'status', 'unread_count', 'last_message_at', 'last_automation_at',
     ];
 
     protected function casts(): array
     {
-        return ['unread_count' => 'integer', 'last_message_at' => 'datetime'];
+        return ['unread_count' => 'integer', 'last_message_at' => 'datetime', 'last_automation_at' => 'datetime'];
     }
 
     public function customer(): BelongsTo

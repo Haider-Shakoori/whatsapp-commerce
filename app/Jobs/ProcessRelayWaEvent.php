@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Automation\InboundAutomation;
 use App\Messaging\ChatCatalogMenu;
 use App\Messaging\ConversationInbox;
 use App\Messaging\RelayWaClient;
@@ -20,7 +21,7 @@ class ProcessRelayWaEvent implements ShouldQueue
 
     public function __construct(public readonly int $eventId) {}
 
-    public function handle(RelayWaClient $client, ChatCatalogMenu $menu, ConversationInbox $inbox): void
+    public function handle(RelayWaClient $client, ChatCatalogMenu $menu, ConversationInbox $inbox, InboundAutomation $automation): void
     {
         $event = InboundEvent::with('channel.merchant')->find($this->eventId);
         if (! $event || $event->processed_at || ! $event->channel) {
@@ -41,7 +42,7 @@ class ProcessRelayWaEvent implements ShouldQueue
             }
         }
 
-        DB::transaction(function () use ($menu, $inbox, $type, $message): void {
+        DB::transaction(function () use ($menu, $inbox, $automation, $type, $message): void {
             // Lock the inbox row: no duplicate bot state mutations on job retries.
             $event = InboundEvent::with('channel.merchant')->lockForUpdate()->find($this->eventId);
             if (! $event || $event->processed_at || ! $event->channel) {
@@ -62,6 +63,7 @@ class ProcessRelayWaEvent implements ShouldQueue
             if ($type === 'message.received' && $message !== null) {
                 $inbox->recordInbound($event, $event->channel, $message);
                 $menu->handle($event, $event->channel, $message);
+                $automation->handle($event, $event->channel, $message);
             }
 
             $event->update(['processed_at' => now()]);

@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
-    protected $fillable = ['merchant_id', 'phone', 'name'];
+    protected $fillable = ['merchant_id', 'phone', 'name', 'automation_opted_out'];
+
+    protected function casts(): array
+    {
+        return ['automation_opted_out' => 'boolean'];
+    }
 
     public function conversations(): HasMany
     {

@@ -21,9 +21,19 @@
   @empty <p class="muted">No messages yet.</p> @endforelse
   </div>
   {{ $messages->links() }}
+  @if($canReply && $conversation->status === 'open' && $automationSettings?->ai_drafts_enabled)
+    <div class="card" style="margin:12px 0;background:#f7f9fd">
+      <h3>AI reply assistant</h3>
+      <p class="muted">AI reads only the latest incoming text and business guidance when you request a draft. The draft is never sent automatically and must be reviewed.</p>
+      <form method="post" action="{{ route('merchant.inbox.ai-draft', [$merchant, $conversation]) }}">@csrf
+        <button class="btn btn-light" type="submit">Generate draft for review</button>
+      </form>
+      @if(session('ai_draft'))<p class="muted">Draft placed in the reply box below. Please edit and verify details before sending.</p>@endif
+    </div>
+  @endif
   @if($canReply && $conversation->status === 'open')
     <form method="post" action="{{ route('merchant.inbox.reply', [$merchant, $conversation]) }}">@csrf
-      <div class="field"><label for="reply">Reply to customer</label><textarea id="reply" name="body" rows="3" maxlength="2000" required placeholder="Type a reply">{{ old('body') }}</textarea></div>
+      <div class="field"><label for="reply">Reply to customer</label><textarea id="reply" name="body" rows="3" maxlength="2000" required placeholder="Type a reply">{{ old('body', session('ai_draft')) }}</textarea></div>
       <button class="btn" type="submit">Queue reply</button>
       <small class="muted">Requires a connected RelayWA channel. Delivery is asynchronous; queued does not mean delivered.</small>
     </form>
@@ -46,6 +56,29 @@
     <button class="btn btn-light" type="submit">{{ $conversation->status === 'open' ? 'Close conversation' : 'Reopen conversation' }}</button>
   </form>
 @else <p class="muted">Only owners and managers may change assignments or close conversations.</p>@endif
+@if($canReply && $automationSettings?->enabled && $automationSettings->followups_enabled)
+<h3 style="margin-top:20px">One-time follow-up</h3>
+<p class="muted">Only schedule after confirming customer consent. If the customer replies, opts out or closes this thread, the follow-up is skipped. Delivery outside business hours is skipped.</p>
+<form method="post" action="{{ route('merchant.inbox.followups.store', [$merchant, $conversation]) }}">@csrf
+  <div class="field"><label for="followup_body">Message</label><textarea id="followup_body" name="body" maxlength="1000" rows="3" required placeholder="Following up on your question..."></textarea></div>
+  <div class="field"><label for="delay_hours">Hours from now</label><input type="number" id="delay_hours" name="delay_hours" min="1" max="168" value="24" required></div>
+  <div class="field"><label><input type="checkbox" name="consent_confirmed" value="1" required> I confirm this customer has consented to this specific follow-up.</label></div>
+  <button class="btn btn-light" type="submit">Schedule follow-up</button>
+</form>
+@endif
+@if($followups->isNotEmpty())
+<h3 style="margin-top:20px">Scheduled history</h3>
+@foreach($followups as $followup)
+<div style="border-top:1px solid #e5e7eb;padding:9px 0">
+  <p><strong>{{ ucfirst($followup->status) }}</strong> · {{ $followup->due_at->format('Y-m-d H:i') }} UTC</p>
+  @if($canReply && $followup->status === 'scheduled')
+  <form method="post" action="{{ route('merchant.inbox.followups.cancel', [$merchant, $conversation, $followup]) }}">@csrf
+    <button class="btn btn-light" type="submit">Cancel follow-up</button>
+  </form>
+  @endif
+</div>
+@endforeach
+@endif
 <p class="muted">Private staff notes are kept on the customer profile. They are never sent to WhatsApp.</p>
 </div>
 </div>

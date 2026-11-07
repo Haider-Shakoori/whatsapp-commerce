@@ -90,3 +90,8 @@ Merchant COD/manual bank settlement and Stripe TEST-only Checkout links, verifie
 ## Batch 08 — Customer Directory & Team Inbox
 
 Shared per-merchant WhatsApp inbox, encrypted message history, customer profiles with internal notes, unread counters, staff replies and managerial assignments. Automated menu replies and manual messages are recorded in one conversation history. More at [inbox implementation](docs/INBOX.md).
+
+
+## Batch 09 — Automations & AI Drafting
+
+Merchant-controlled keyword/after-hours replies, business hours, routing, one-time consent-based follow-ups, and optional staff-reviewed AI drafts. No AI auto-sending. See docs/AUTOMATION.md.
