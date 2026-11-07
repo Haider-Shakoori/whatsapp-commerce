@@ -13,6 +13,7 @@ use App\Http\Controllers\OrderPaymentController;
 use App\Http\Controllers\PaymentReturnController;
 use App\Http\Controllers\PaymentSettingsController;
 use App\Http\Controllers\PlatformAdminController;
+use App\Http\Controllers\PlatformOperationsController;
 use App\Http\Controllers\PlatformSettingsController;
 use App\Http\Controllers\PlatformSubscriptionsController;
 use App\Http\Controllers\ProductController;
@@ -46,6 +47,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/subscriptions', [PlatformSubscriptionsController::class, 'index'])->name('subscriptions.index');
         Route::post('/merchants/{merchant:slug}/subscription/grant', [PlatformSubscriptionsController::class, 'grant'])
             ->middleware('throttle:3,1')->name('subscriptions.grant');
+        Route::get('/channels', [PlatformOperationsController::class, 'channels'])->name('channels.index');
+        Route::get('/messages', [PlatformOperationsController::class, 'messages'])->name('messages.index');
+        Route::get('/health', [PlatformOperationsController::class, 'health'])->name('health.index');
         Route::get('/settings', [PlatformSettingsController::class, 'index'])->name('settings.index');
         Route::put('/settings', [PlatformSettingsController::class, 'update'])
             ->middleware('throttle:5,1')->name('settings.update');

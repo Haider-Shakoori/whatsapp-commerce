@@ -17,16 +17,43 @@ class PlatformSubscriptionsController extends Controller
 {
     public function index(Request $request): View
     {
-        $data = $request->validate(['status' => ['nullable', 'in:trialing,active,expired,cancelled']]);
+        $filters = $request->validate([
+            'status' => ['nullable', 'in:trialing,active,expired,cancelled'],
+            'plan' => ['nullable', 'string', 'max:50', 'regex:/^[a-z0-9_-]+$/'],
+            'q' => ['nullable', 'string', 'max:100'],
+            'expiry' => ['nullable', 'in:7,30,expired'],
+        ]);
+        $query = MerchantSubscription::query()->with(['merchant', 'plan']);
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (isset($filters['plan'])) {
+            $query->whereHas('plan', fn ($q) => $q->where('code', $filters['plan']));
+        }
+        if ($search = trim((string) ($filters['q'] ?? ''))) {
+            $term = '%'.addcslashes($search, '%_\\').'%';
+            $query->whereHas('merchant', fn ($q) => $q->where('name', 'like', $term)
+                ->orWhere('slug', 'like', $term));
+        }
+        if (isset($filters['expiry'])) {
+            if ($filters['expiry'] === 'expired') {
+                $query->where('period_end', '<=', now());
+            } else {
+                $query->whereBetween('period_end', [now(), now()->addDays((int) $filters['expiry'])]);
+            }
+        }
 
         return view('platform.subscriptions', [
-            'subscriptions' => MerchantSubscription::query()->with(['merchant', 'plan'])
-                ->when($data['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
-                ->orderBy('period_end')->paginate(25)->withQueryString(),
+            'subscriptions' => $query->orderBy('period_end')->paginate(25)->withQueryString(),
             'requests' => SubscriptionEvent::where('event', 'plan_change_requested')
                 ->with('merchant')->latest('id')->limit(20)->get(),
-            'plans' => SubscriptionPlan::where('is_active', true)->where('code', '!=', 'trial')
-                ->orderBy('id')->get(),
+            'plans' => SubscriptionPlan::orderBy('name')->get(),
+            'activeCount' => MerchantSubscription::where('status', 'active')->where('period_end', '>', now())->count(),
+            'trialCount' => MerchantSubscription::where('status', 'trialing')->where('period_end', '>', now())->count(),
+            'expiringCount' => MerchantSubscription::whereIn('status', ['active', 'trialing'])
+                ->whereBetween('period_end', [now(), now()->addDays(7)])->count(),
+            'expiredCount' => MerchantSubscription::where('period_end', '<=', now())->count(),
         ]);
     }
 

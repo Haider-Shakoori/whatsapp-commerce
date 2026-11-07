@@ -13,8 +13,11 @@
                 ['label' => 'Overview', 'route' => 'platform.index', 'icon' => 'overview'],
                 ['label' => 'Merchants', 'route' => 'platform.merchants.index', 'icon' => 'users'],
                 ['label' => 'Subscriptions', 'route' => 'platform.subscriptions.index', 'icon' => 'layers'],
+                ['label' => 'WhatsApp channels', 'route' => 'platform.channels.index', 'icon' => 'link'],
+                ['label' => 'Message operations', 'route' => 'platform.messages.index', 'icon' => 'message'],
             ],
             'Administration' => [
+                ['label' => 'System health', 'route' => 'platform.health.index', 'icon' => 'activity'],
                 ['label' => 'Platform settings', 'route' => 'platform.settings.index', 'icon' => 'settings'],
                 ['label' => 'Audit trail', 'route' => 'platform.audit.index', 'icon' => 'activity'],
             ],
@@ -51,7 +54,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <link rel="stylesheet" href="{{ asset('css/catalog.css') }}">
     @if($workspace)
-        <link rel="stylesheet" href="{{ asset('css/workspace.css') }}?v=14">
+        <link rel="stylesheet" href="{{ asset('css/workspace.css') }}?v=15">
         <script>
             try {
                 document.documentElement.dataset.theme = localStorage.getItem('commerce-theme') === 'dark' ? 'dark' : 'light';
