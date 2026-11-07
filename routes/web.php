@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware('merchant.manage')->group(function () {
             Route::post('/channels', [RelayWaChannelController::class, 'store'])->name('channels.store');
+            Route::post('/channels/{channel}/menu', [RelayWaChannelController::class, 'setMenuEnabled'])->name('channels.menu');
             Route::post('/channels/{channel}/webhook-secret', [RelayWaChannelController::class, 'setWebhookSecret'])->name('channels.webhook-secret');
             Route::delete('/channels/{channel}', [RelayWaChannelController::class, 'destroy'])->name('channels.destroy');
             Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');

@@ -18,6 +18,18 @@
             <div class="field"><label for="webhook_secret_{{ $channel->id }}">Set or rotate webhook secret</label><input id="webhook_secret_{{ $channel->id }}" name="webhook_secret" type="password" autocomplete="new-password" required></div>
             <button class="btn" type="submit">Save webhook secret</button>
         </form>
+        <div class="card" style="margin:16px 0;background:#f6faf8">
+            <h3>Conversational product menu</h3>
+            <p class="muted">Customers can message MENU, browse categories and products, and see prices, sizes and toppings. No orders or payments are processed in Batch 4.</p>
+            <p><strong>Menu:</strong> {{ $channel->menu_enabled ? 'Enabled' : 'Disabled' }} · Global messaging transport: {{ config('commerce.messaging_driver') === 'relaywa' ? 'RelayWA' : 'Disabled for safety' }}</p>
+            <form method="post" action="{{ route('merchant.channels.menu', [$merchant, $channel]) }}">
+                @csrf
+                <input type="hidden" name="menu_enabled" value="{{ $channel->menu_enabled ? '0' : '1' }}">
+                <button class="btn {{ $channel->menu_enabled ? 'btn-light' : '' }}" type="submit">
+                    {{ $channel->menu_enabled ? 'Disable menu' : 'Enable menu' }}
+                </button>
+            </form>
+        </div>
         <form method="post" action="{{ route('merchant.channels.destroy', [$merchant, $channel]) }}">
             @csrf @method('DELETE')
             <button class="btn btn-light" type="submit">Detach channel</button>
