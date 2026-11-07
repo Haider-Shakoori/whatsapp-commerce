@@ -12,3 +12,5 @@ Schedule::command('commerce:relaywa:health')->everyFiveMinutes()->withoutOverlap
 Schedule::command('commerce:payments:reconcile')->everyFifteenMinutes()->withoutOverlapping();
 
 Schedule::command('commerce:automation:followups')->everyMinute()->withoutOverlapping();
+
+Schedule::command('commerce:subscription:expire')->daily()->withoutOverlapping();

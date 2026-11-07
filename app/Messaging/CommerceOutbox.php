@@ -6,12 +6,14 @@ use App\Jobs\SendCommerceMessage;
 use App\Models\Merchant;
 use App\Models\MessagingChannel;
 use App\Models\OutboundMessage;
+use App\Saas\MerchantEntitlements;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
 
 final class CommerceOutbox
 {
-    public function __construct(private readonly ConversationInbox $inbox) {}
+    public function __construct(private readonly ConversationInbox $inbox, private readonly MerchantEntitlements $entitlements) {}
 
     public function queueText(
         Merchant $merchant,
@@ -31,26 +33,29 @@ final class CommerceOutbox
             throw new InvalidArgumentException('Invalid recipient, message body or idempotency key.');
         }
 
-        $message = OutboundMessage::firstOrCreate(
-            ['merchant_id' => $merchant->id, 'idempotency_key' => $idempotencyKey],
-            [
-                'messaging_channel_id' => $channel->id,
-                'recipient' => $recipient,
-                'body' => $text,
-                'status' => 'queued',
-            ],
-        );
+        return DB::transaction(function () use ($merchant, $channel, $recipient, $text, $idempotencyKey): OutboundMessage {
+            $existing = OutboundMessage::where('merchant_id', $merchant->id)
+                ->where('idempotency_key', $idempotencyKey)->first();
+            if ($existing) {
+                if ($existing->messaging_channel_id !== $channel->id
+                    || $existing->recipient !== $recipient || $existing->body !== $text) {
+                    throw new RuntimeException('Idempotency key already belongs to another message.');
+                }
 
-        if ($message->messaging_channel_id !== $channel->id
-            || $message->recipient !== $recipient || $message->body !== $text) {
-            throw new RuntimeException('This idempotency key is already used for a different message.');
-        }
+                return $existing;
+            }
 
-        if ($message->wasRecentlyCreated) {
+            // Quota consumption, message creation and inbox record are atomic.
+            $this->entitlements->consumeOutbound($merchant);
+            $message = OutboundMessage::create([
+                'merchant_id' => $merchant->id, 'messaging_channel_id' => $channel->id,
+                'idempotency_key' => $idempotencyKey,
+                'recipient' => $recipient, 'body' => $text, 'status' => 'queued',
+            ]);
             $this->inbox->recordOutbound($message);
             SendCommerceMessage::dispatch($message->id)->afterCommit();
-        }
 
-        return $message;
+            return $message;
+        });
     }
 }

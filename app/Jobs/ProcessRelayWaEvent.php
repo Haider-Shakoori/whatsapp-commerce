@@ -7,6 +7,7 @@ use App\Messaging\ChatCatalogMenu;
 use App\Messaging\ConversationInbox;
 use App\Messaging\RelayWaClient;
 use App\Models\InboundEvent;
+use App\Saas\Exceptions\SubscriptionLimitException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -62,8 +63,12 @@ class ProcessRelayWaEvent implements ShouldQueue
 
             if ($type === 'message.received' && $message !== null) {
                 $inbox->recordInbound($event, $event->channel, $message);
-                $menu->handle($event, $event->channel, $message);
-                $automation->handle($event, $event->channel, $message);
+                try {
+                    $menu->handle($event, $event->channel, $message);
+                    $automation->handle($event, $event->channel, $message);
+                } catch (SubscriptionLimitException $e) {
+                    // Preserve the inbound event and avoid retry storms when quota is exhausted.
+                }
             }
 
             $event->update(['processed_at' => now()]);

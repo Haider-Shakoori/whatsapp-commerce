@@ -9,12 +9,15 @@ use App\Models\ChatMenuSession;
 use App\Models\Conversation;
 use App\Models\InboundEvent;
 use App\Models\MessagingChannel;
+use App\Saas\Exceptions\SubscriptionLimitException;
+use App\Saas\MerchantEntitlements;
 
 final class InboundAutomation
 {
     public function __construct(
         private readonly BusinessHours $hours,
         private readonly CommerceOutbox $outbox,
+        private readonly MerchantEntitlements $entitlements,
     ) {}
 
     /** Called from the signed inbound webhook worker AFTER the inbox stores the message. */
@@ -65,6 +68,11 @@ final class InboundAutomation
 
         $settings = AutomationSetting::where('merchant_id', $channel->merchant_id)->first();
         if (! $settings?->enabled) {
+            return;
+        }
+        try {
+            $this->entitlements->assertFeature($channel->merchant, 'automation');
+        } catch (SubscriptionLimitException $e) {
             return;
         }
 

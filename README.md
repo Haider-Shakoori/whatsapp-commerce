@@ -9,9 +9,14 @@ Global multi-tenant, WhatsApp-first commerce SaaS. The commerce database owns me
 - **Batch 03:** RelayWA verified session mapping, secure signed inbound webhooks, encrypted credentials, message outbox and health monitoring.
 - **Batch 04 (branch feat/batch-04-chat-menu):** Merchant-controlled text-based WhatsApp menu, category and product browsing, variants/extras, pagination, opt-out and event deduplication.
 - **Batch 05 (branch feat/batch-05-conversational-cart):** Persistent chat shopping carts, variant and modifier selections, quantity changes, stock checks, provisional totals, tenant isolation and replay-safe ADD commands.
-- **Not yet active:** Checkout/orders, real payment processing, photo messages, native WhatsApp catalog, subscription billing and customer checkout.
+- **Batch 06:** Customer checkout, stock-safe unpaid orders and merchant order management.
+- **Batch 07:** Manual payment bookkeeping and Stripe TEST-only checkout links; no live charges.
+- **Batch 08:** Merchant team inbox, encrypted conversation history and customer profiles.
+- **Batch 09:** Opt-in keyword and business-hours replies, staff follow-ups and human-reviewed AI drafts.
+- **Batch 10:** Tenant-scoped SaaS trial/plan entitlements, usage limits, manual extension workflow and a subscription dashboard.
+- **Not yet active:** Live SaaS billing, recurring charges, automatic renewals, native WhatsApp catalog, message images and production launch.
 
-Development PRs are currently stacked: PR #1 → #2 → #3 → #4 → #5. Merge in this order and rerun CI before deployment.
+Development PRs are currently stacked: PR #1 → #2 → #3 → #4 → #5 → #6 → #7 → #8 → #9 → #10. Merge in this order and rerun CI before deployment.
 
 ## Local development
 
@@ -20,7 +25,7 @@ Requires PHP 8.2+ with SQLite/MySQL support, Composer and the usual Laravel exte
 \`\`\`bash
 git clone https://github.com/Haider-Shakoori/whatsapp-commerce.git
 cd whatsapp-commerce
-git switch feat/batch-05-conversational-cart
+git switch feat/batch-10-saas-subscriptions
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -74,7 +79,7 @@ The merchant can enable or disable an automated text menu in WhatsApp connection
 
 ## Customer cart (Batch 05)
 
-Customers open the chat MENU, view a product and reply ADD or ADD 2, then select sizes/colors and any required/optional toppings. CART displays subtotal; QTY, REMOVE, CLEAR and CLEAR YES maintain the basket. CHECKOUT is intentionally disabled. Cart prices are provisional, stock is not reserved, and price and stock must be reverified at actual checkout. See [Batch 05 cart documentation](docs/CART.md).
+Customers open the chat MENU, view a product and reply ADD or ADD 2, then select sizes/colors and any required/optional toppings. CART displays subtotal; QTY, REMOVE, CLEAR and CLEAR YES maintain the basket. The cart subtotal is provisional; Batch 6 enables CHECKOUT and revalidates prices and available stock when the customer confirms the order. See [Batch 05 cart documentation](docs/CART.md).
 
 
 ## Checkout & Order Management (Batch 06)
@@ -95,3 +100,8 @@ Shared per-merchant WhatsApp inbox, encrypted message history, customer profiles
 ## Batch 09 — Automations & AI Drafting
 
 Merchant-controlled keyword/after-hours replies, business hours, routing, one-time consent-based follow-ups, and optional staff-reviewed AI drafts. No AI auto-sending. See docs/AUTOMATION.md.
+
+
+## Batch 10 — SaaS Subscriptions & Billing Foundation
+
+Merchant-level Evaluation, Starter and Growth plans, a bounded 14-day evaluation, entitlement-checked catalog/channel/outbound workflows, message metering, plan-change requests, billing/event history, operator-only manual grants and daily expiry reconciliation. No live SaaS charges, automatically paid invoices or auto-renewals. [Setup and limitations](docs/SAAS_BILLING.md).

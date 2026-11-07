@@ -8,7 +8,7 @@
             <span class="pill">{{ ucfirst($merchant->business_type) }}</span>
             <h2 style="margin-top:16px">{{ $merchant->name }}</h2>
             <p class="muted">{{ $merchant->currency }} · {{ $merchant->timezone }}</p>
-            <a class="btn" href="{{ route('merchant.products.index', $merchant) }}">Manage products</a>
+            <a class="btn" href="{{ route('merchant.products.index', $merchant) }}">Manage products</a> <a class="btn btn-light" href="{{ route('merchant.subscription.index', $merchant) }}">Subscription</a>
         </div>
     @empty
         <div class="card"><p>You do not belong to any businesses yet.</p></div>

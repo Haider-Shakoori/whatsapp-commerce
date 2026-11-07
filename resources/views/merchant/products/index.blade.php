@@ -4,7 +4,7 @@
 @php($canManage = auth()->user()->merchants()->whereKey($merchant->id)->wherePivotIn('role', ['owner', 'manager'])->exists())
 <div class="actions">
     <div>
-        <a href="{{ route('dashboard') }}">&larr; My businesses</a> · <a href="{{ route('merchant.orders.index', $merchant) }}">View orders</a> · <a href="{{ route('merchant.inbox.index', $merchant) }}">Team inbox</a> · <a href="{{ route('merchant.customers.index', $merchant) }}">Customers</a> · <a href="{{ route('merchant.payments.settings', $merchant) }}">Payment settings</a> @if($canManage)· <a href="{{ route('merchant.automation.index', $merchant) }}">Automation</a>@endif
+        <a href="{{ route('dashboard') }}">&larr; My businesses</a> · <a href="{{ route('merchant.orders.index', $merchant) }}">View orders</a> · <a href="{{ route('merchant.subscription.index', $merchant) }}">Subscription</a> · <a href="{{ route('merchant.inbox.index', $merchant) }}">Team inbox</a> · <a href="{{ route('merchant.customers.index', $merchant) }}">Customers</a> · <a href="{{ route('merchant.payments.settings', $merchant) }}">Payment settings</a> @if($canManage)· <a href="{{ route('merchant.automation.index', $merchant) }}">Automation</a>@endif
         <h1 style="margin-top:12px">{{ $merchant->name }} · Products</h1>
         <p class="muted">Catalog management · {{ $merchant->currency }} · WhatsApp publishing not yet enabled</p>
     </div>

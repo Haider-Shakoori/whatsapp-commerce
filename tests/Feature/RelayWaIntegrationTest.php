@@ -10,6 +10,7 @@ use App\Models\Merchant;
 use App\Models\MessagingChannel;
 use App\Models\OutboundMessage;
 use App\Models\User;
+use App\Saas\MerchantEntitlements;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
@@ -184,7 +185,7 @@ class RelayWaIntegrationTest extends TestCase
 
         $message = app(CommerceOutbox::class)->queueText($merchant, $channel, '+93700000000', 'Hello', 'test-uncertain');
         $this->assertDatabaseHas('outbound_messages', ['id' => $message->id, 'status' => 'uncertain', 'attempts' => 1]);
-        (new SendCommerceMessage($message->id))->handle(app(MessagingTransport::class));
+        (new SendCommerceMessage($message->id))->handle(app(MessagingTransport::class), app(MerchantEntitlements::class));
         Http::assertSentCount(1);
     }
 
