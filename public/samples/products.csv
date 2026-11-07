@@ -1,0 +1,4 @@
+sku,name,category,description,price,stock,active
+PIZZA-001,Margherita Pizza,Pizza,Classic cheese pizza,450.00,25,yes
+DRINK-001,Cola 330ml,Drinks,Cold soft drink,50.00,100,yes
+TSHIRT-001,Cotton T-Shirt,Clothing,Comfortable short sleeve shirt,700.00,40,no

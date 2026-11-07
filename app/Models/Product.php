@@ -32,4 +32,19 @@ class Product extends Model
     {
         return $this->hasMany(ProductVariant::class);
     }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class);
+    }
+
+    public function modifierGroups(): HasMany
+    {
+        return $this->hasMany(ProductModifierGroup::class);
+    }
+
+    public function inventoryAdjustments(): HasMany
+    {
+        return $this->hasMany(InventoryAdjustment::class);
+    }
 }
