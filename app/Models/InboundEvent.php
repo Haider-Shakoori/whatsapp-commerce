@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InboundEvent extends Model
 {
@@ -13,5 +14,10 @@ class InboundEvent extends Model
     protected function casts(): array
     {
         return ['payload' => 'encrypted:array', 'processed_at' => 'datetime'];
+    }
+
+    public function channel(): BelongsTo
+    {
+        return $this->belongsTo(MessagingChannel::class, 'messaging_channel_id');
     }
 }

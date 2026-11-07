@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OutboundMessage extends Model
 {
@@ -11,8 +12,19 @@ class OutboundMessage extends Model
         'status', 'provider_message_id', 'attempts', 'sent_at',
     ];
 
+    protected $hidden = ['body'];
+
     protected function casts(): array
     {
-        return ['attempts' => 'integer', 'sent_at' => 'datetime'];
+        return [
+            'body' => 'encrypted',
+            'attempts' => 'integer',
+            'sent_at' => 'datetime',
+        ];
+    }
+
+    public function channel(): BelongsTo
+    {
+        return $this->belongsTo(MessagingChannel::class, 'messaging_channel_id');
     }
 }

@@ -30,4 +30,9 @@ jobs:
       - name: Run automated tests
         run: php artisan test --no-ansi
       - name: Check code formatting
-        run: vendor/bin/pint --test
+        run: |
+          vendor/bin/pint --test || {
+            vendor/bin/pint >/dev/null
+            git diff -- app tests
+            exit 1
+          }

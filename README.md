@@ -57,3 +57,8 @@ This repository was public at the time the foundation began. Consider marking it
 ## Testing
 
 GitHub Actions performs Composer install, application bootstrap, PHPUnit feature tests and Laravel Pint checks. Run \`php artisan test\` locally and inspect the PR status before merging. Never claim production readiness based on scaffold tests alone.
+
+
+## RelayWA integration (Batch 03)
+
+Batch 03 adds a two-step existing-session onboarding flow, per-merchant encrypted credentials, signed webhook ingestion with replay protection, outbox idempotency and safe delivery states. The adapter is DISABLED by default. See docs/RELAYWA_INTEGRATION.md for details. PR #3 is stacked on PR #2 and is not a production deployment.
