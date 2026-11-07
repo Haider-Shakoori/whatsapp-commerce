@@ -16,7 +16,7 @@ Global multi-tenant, WhatsApp-first commerce SaaS. The commerce database owns me
 - **Batch 10:** Tenant-scoped SaaS trial/plan entitlements, usage limits, manual extension workflow and a subscription dashboard.
 - **Not yet active:** Live SaaS billing, recurring charges, automatic renewals, native WhatsApp catalog, message images and production launch.
 
-Development PRs are currently stacked: PR #1 → #2 → #3 → #4 → #5 → #6 → #7 → #8 → #9 → #10 → #11. Merge in this order and rerun CI before deployment.
+Development PRs are currently stacked: PR #1 → #2 → #3 → #4 → #5 → #6 → #7 → #8 → #9 → #10 → #11 → #12. Merge in this order and rerun CI before deployment.
 
 ## Local development
 
@@ -25,7 +25,7 @@ Requires PHP 8.2+ with SQLite/MySQL support, Composer and the usual Laravel exte
 \`\`\`bash
 git clone https://github.com/Haider-Shakoori/whatsapp-commerce.git
 cd whatsapp-commerce
-git switch feat/batch-11-platform-admin-analytics
+git switch feat/batch-12-release-hardening
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -110,3 +110,8 @@ Merchant-level Evaluation, Starter and Growth plans, a bounded 14-day evaluation
 ## Batch 11 — Platform Administration and Analytics
 
 Platform-only administration roles, merchant suspension and reactivation, SaaS subscription oversight, outbound/registration emergency pauses, 30-day operational metrics, queue/job health and audited operator actions. No real billing revenue or live payment integration. [Operations and security guide](docs/PLATFORM_ADMIN.md).
+
+
+## Batch 12 — Security Hardening & Release Gates
+
+Adds idempotency lock serialization, RelayWA outbound host pinning/session safety, a non-resending stale-send detector, production deployment preflight and a dedicated MySQL 8.4 integration workflow. **The application is not deployed**; the original 12 stacked PRs must be merged and retested on main before release. See [release runbook](docs/RELEASE_RUNBOOK.md) and [security review](docs/SECURITY_REVIEW.md).

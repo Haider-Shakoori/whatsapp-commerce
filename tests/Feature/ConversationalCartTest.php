@@ -178,7 +178,7 @@ class ConversationalCartTest extends TestCase
         $this->say($channel, 'ADD 4');
         $this->assertStringContainsString('Not enough available stock', $this->say($channel, '2'));
         $this->assertStringContainsString('insufficient stock', $this->say($channel, 'QTY 1 4'));
-        $this->assertSame(2, CartItem::sum('quantity'));
+        $this->assertSame(2, (int) CartItem::sum('quantity'));
     }
 
     public function test_stop_preserves_cart_and_checkout_does_not_create_orders(): void

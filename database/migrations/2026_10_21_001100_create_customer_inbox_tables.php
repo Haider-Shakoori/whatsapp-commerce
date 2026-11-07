@@ -45,7 +45,7 @@ return new class extends Migration
             $table->timestamp('message_at');
             $table->timestamps();
             $table->unique(['conversation_id', 'provider_message_id'], 'conversation_provider_msg_unique');
-            $table->index(['merchant_id', 'conversation_id', 'message_at']);
+            $table->index(['merchant_id', 'conversation_id', 'message_at'], 'conv_messages_tenant_thread_time_idx');
         });
 
         Schema::create('customer_notes', function (Blueprint $table) {

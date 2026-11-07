@@ -14,3 +14,6 @@ Schedule::command('commerce:payments:reconcile')->everyFifteenMinutes()->without
 Schedule::command('commerce:automation:followups')->everyMinute()->withoutOverlapping();
 
 Schedule::command('commerce:subscription:expire')->daily()->withoutOverlapping();
+
+// Stale sending records are never retried: an unknown upstream outcome requires manual reconciliation.
+Schedule::command('commerce:outbox:mark-uncertain')->everyFifteenMinutes()->withoutOverlapping();
