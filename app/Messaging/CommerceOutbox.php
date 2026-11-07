@@ -11,6 +11,8 @@ use RuntimeException;
 
 final class CommerceOutbox
 {
+    public function __construct(private readonly ConversationInbox $inbox) {}
+
     public function queueText(
         Merchant $merchant,
         MessagingChannel $channel,
@@ -45,6 +47,7 @@ final class CommerceOutbox
         }
 
         if ($message->wasRecentlyCreated) {
+            $this->inbox->recordOutbound($message);
             SendCommerceMessage::dispatch($message->id)->afterCommit();
         }
 

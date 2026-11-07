@@ -85,3 +85,8 @@ Customers use CHECKOUT from a saved cart, provide name and pickup/delivery detai
 ## Batch 07 — Payments
 
 Merchant COD/manual bank settlement and Stripe TEST-only Checkout links, verified signed webhooks, idempotency and reconciliation. No live charge or payout. See [payment documentation](docs/PAYMENTS.md).
+
+
+## Batch 08 — Customer Directory & Team Inbox
+
+Shared per-merchant WhatsApp inbox, encrypted message history, customer profiles with internal notes, unread counters, staff replies and managerial assignments. Automated menu replies and manual messages are recorded in one conversation history. More at [inbox implementation](docs/INBOX.md).

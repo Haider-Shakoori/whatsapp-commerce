@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OrderController;
@@ -32,12 +34,22 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/inbox', [ConversationController::class, 'index'])->name('inbox.index');
+        Route::get('/inbox/{conversation}', [ConversationController::class, 'show'])->name('inbox.show');
+        Route::post('/inbox/{conversation}/read', [ConversationController::class, 'markRead'])->name('inbox.read');
+        Route::post('/inbox/{conversation}/reply', [ConversationController::class, 'reply'])->name('inbox.reply');
+        Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+        Route::get('/customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+        Route::post('/customers/{customer}/notes', [CustomerController::class, 'addNote'])->name('customers.notes');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/payment-settings', [PaymentSettingsController::class, 'index'])->middleware('merchant.manage')->name('payments.settings');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::get('/channels', [RelayWaChannelController::class, 'index'])->middleware('merchant.manage')->name('channels.index');
 
         Route::middleware('merchant.manage')->group(function () {
+            Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+            Route::post('/inbox/{conversation}/assign', [ConversationController::class, 'assign'])->name('inbox.assign');
+            Route::post('/inbox/{conversation}/status', [ConversationController::class, 'changeStatus'])->name('inbox.status');
             Route::put('/payment-settings', [PaymentSettingsController::class, 'update'])->name('payments.settings.update');
             Route::post('/orders/{order}/payment-method', [OrderPaymentController::class, 'createMethod'])->name('orders.payments.method');
             Route::post('/orders/{order}/stripe-test-link', [OrderPaymentController::class, 'stripeTestLink'])->name('orders.payments.link');
