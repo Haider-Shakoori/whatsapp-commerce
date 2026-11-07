@@ -31,6 +31,11 @@ class Order extends Model
         return $this->belongsTo(Merchant::class);
     }
 
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(PaymentAttempt::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);

@@ -5,6 +5,9 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderPaymentController;
+use App\Http\Controllers\PaymentReturnController;
+use App\Http\Controllers\PaymentSettingsController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductImageController;
 use App\Http\Controllers\ProductImportController;
@@ -14,6 +17,7 @@ use App\Http\Controllers\RelayWaChannelController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+Route::get('/payment-result/{publicId}', PaymentReturnController::class)->name('payments.return');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'registerForm'])->name('register');
@@ -29,10 +33,16 @@ Route::middleware('auth')->group(function () {
     Route::prefix('m/{merchant:slug}')->middleware('merchant.member')->name('merchant.')->group(function () {
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/payment-settings', [PaymentSettingsController::class, 'index'])->middleware('merchant.manage')->name('payments.settings');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::get('/channels', [RelayWaChannelController::class, 'index'])->middleware('merchant.manage')->name('channels.index');
 
         Route::middleware('merchant.manage')->group(function () {
+            Route::put('/payment-settings', [PaymentSettingsController::class, 'update'])->name('payments.settings.update');
+            Route::post('/orders/{order}/payment-method', [OrderPaymentController::class, 'createMethod'])->name('orders.payments.method');
+            Route::post('/orders/{order}/stripe-test-link', [OrderPaymentController::class, 'stripeTestLink'])->name('orders.payments.link');
+            Route::post('/orders/{order}/payments/{attempt}/confirm', [OrderPaymentController::class, 'confirmManual'])->name('orders.payments.confirm');
+            Route::post('/orders/{order}/payments/{attempt}/reconcile', [OrderPaymentController::class, 'reconcile'])->name('orders.payments.reconcile');
             Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
             Route::post('/channels', [RelayWaChannelController::class, 'store'])->name('channels.store');
             Route::post('/channels/{channel}/menu', [RelayWaChannelController::class, 'setMenuEnabled'])->name('channels.menu');

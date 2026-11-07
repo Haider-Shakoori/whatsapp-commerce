@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Merchant extends Model
 {
@@ -38,6 +39,16 @@ class Merchant extends Model
     public function messagingChannels(): HasMany
     {
         return $this->hasMany(MessagingChannel::class);
+    }
+
+    public function paymentSetting(): HasOne
+    {
+        return $this->hasOne(MerchantPaymentSetting::class);
+    }
+
+    public function paymentAttempts(): HasMany
+    {
+        return $this->hasMany(PaymentAttempt::class);
     }
 
     public function carts(): HasMany

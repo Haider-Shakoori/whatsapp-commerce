@@ -80,3 +80,8 @@ Customers open the chat MENU, view a product and reply ADD or ADD 2, then select
 ## Checkout & Order Management (Batch 06)
 
 Customers use CHECKOUT from a saved cart, provide name and pickup/delivery details, review an indicative subtotal, then CONFIRM. A confirmed order is placed as unpaid and its items are deducted from tracked inventory in one transaction; failures preserve the cart. Merchants review orders from the dashboard and progress statuses or cancel with stock restoration. No payment integration or delivery-rate calculation is activated. See [Checkout implementation and limitations](docs/CHECKOUT.md).
+
+
+## Batch 07 — Payments
+
+Merchant COD/manual bank settlement and Stripe TEST-only Checkout links, verified signed webhooks, idempotency and reconciliation. No live charge or payout. See [payment documentation](docs/PAYMENTS.md).
