@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Merchant;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\PublicProductMedia;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +24,7 @@ class ProductImageController extends Controller
         }
 
         try {
+            PublicProductMedia::ensureBrowsableDirectories($merchant, $product);
             $product->images()->create([
                 'merchant_id' => $merchant->id,
                 'disk' => 'public',

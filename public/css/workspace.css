@@ -71,3 +71,27 @@ html[data-theme=dark] .workspace-mode .product-thumb.placeholder{background:#263
     .ws-footer span:last-child{display:none}
 }
 @media(prefers-reduced-motion:reduce){.workspace-mode *, .ws-backdrop{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Batch 14: photo upload, metrics and merchant management */
+.product-photo-field{padding:20px;margin:20px 0;border:1px solid var(--line);border-radius:13px;background:var(--white)}
+.product-photo-drop{display:flex;align-items:center;gap:18px;padding:17px;margin:14px 0;border:2px dashed var(--line);border-radius:13px;cursor:pointer;background:var(--bg)}
+.product-photo-drop:hover{border-color:var(--main)}.product-photo-drop small{display:block;color:var(--muted);font-weight:500}.product-photo-placeholder{font-size:36px;width:80px;height:80px;border-radius:10px;background:var(--white);display:grid;place-items:center}
+.product-photo-preview{height:118px;width:118px;object-fit:cover;border-radius:10px}.product-photo-preview[hidden],.product-photo-placeholder[hidden]{display:none}
+.ws-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:15px;margin:21px 0 27px}
+.ws-stat-card{border:1px solid var(--line);border-radius:14px;padding:19px;background:var(--white);box-shadow:var(--ws-shadow)}.ws-stat-card small{display:block;color:var(--muted);font-size:12px}.ws-stat-card strong{display:block;margin-top:8px;font-size:27px;letter-spacing:-1px}
+.ws-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:17px}.ws-panel-heading h2{margin:0}.ws-panel-heading p{font-size:12px;color:var(--muted);margin:5px 0 0}
+.ws-trend-chart{display:grid;grid-template-columns:repeat(var(--chart-days,30),minmax(3px,1fr));align-items:end;gap:3px;height:185px;padding:12px 3px 0;border-bottom:1px solid var(--line)}
+.ws-trend-day{display:flex;align-items:flex-end;justify-content:space-evenly;gap:1px;height:100%;min-width:0}
+.ws-trend-bar{display:block;min-width:1px;flex:1;max-width:18px;min-height:2px;height:var(--bar-height);background:#17aa8e;border-radius:4px 4px 0 0}
+.ws-trend-bar.is-secondary{background:#88b6ce}.ws-trend-bar.is-tertiary{background:#d6a05d}
+.ws-trend-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin:14px 0}
+.ws-trend-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;background:#17aa8e}.ws-trend-legend .blue{background:#88b6ce}.ws-trend-legend .gold{background:#d6a05d}
+.ws-trend-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.ws-toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.ws-toolbar .field{flex:1 1 145px;margin:0}.ws-toolbar .field.search{flex:3 1 230px}
+.ws-status-chip{padding:4px 9px;border-radius:999px;font-size:11px;font-weight:750;background:#e8f7ee;color:#096a57}.ws-status-chip.suspended{background:#fff0ed;color:#a23028}
+.ws-row-title{font-weight:750}.ws-row-subtitle{display:block;color:var(--muted);font-size:11px;margin-top:4px}.ws-link-action{font-size:12px;font-weight:700}
+.ws-summary-list{margin:0;display:grid;gap:12px}.ws-summary-list>div{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.ws-summary-list dt{color:var(--muted);font-size:13px}.ws-summary-list dd{margin:0;font-weight:750;text-align:right;font-size:13px}
+html[data-theme=dark] .ws-status-chip{background:#154e46;color:#bcf2e2}html[data-theme=dark] .ws-status-chip.suspended{background:#50312e;color:#ffb7ae}
+@media(max-width:520px){.product-photo-drop{flex-direction:column;text-align:center}.ws-trend-chart{gap:1px}.ws-toolbar .field{flex:1 1 100%}}

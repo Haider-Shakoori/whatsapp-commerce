@@ -226,4 +226,50 @@ class PlatformAdministrationTest extends TestCase
         $this->actingAs($admin)->get(route('merchant.orders.index', $merchant))->assertForbidden();
         $this->assertSame(0, $admin->merchants()->count());
     }
+
+    public function test_platform_dashboard_uses_a_validated_period_and_displays_activity_graph(): void
+    {
+        $admin = $this->admin();
+        $this->actingAs($admin)->get(route('platform.index', ['days' => 7]))
+            ->assertOk()
+            ->assertSee('Messaging & orders activity', false)
+            ->assertSee('New merchants')
+            ->assertSee('Last 7 days')
+            ->assertDontSee('CONFIDENTIAL CHAT BODY');
+
+        $this->actingAs($admin)->get(route('platform.index', ['days' => 12]))
+            ->assertSessionHasErrors('days');
+    }
+
+    public function test_platform_merchant_directory_filters_plan_status_and_sort(): void
+    {
+        $admin = $this->admin();
+        [, $active] = $this->shop('green-market');
+        [, $suspended] = $this->shop('red-market');
+        $suspended->update(['status' => 'suspended']);
+
+        $this->actingAs($admin)->get(route('platform.merchants.index', [
+            'status' => 'active',
+            'q' => 'green',
+            'plan' => 'trial',
+            'sort' => 'name',
+        ]))->assertOk()->assertSee('Merchant green-market')->assertDontSee('Merchant red-market');
+
+        $this->actingAs($admin)->get(route('platform.merchants.index', ['status' => 'suspended']))
+            ->assertOk()->assertSee('Merchant red-market')->assertDontSee('Merchant green-market');
+        $this->actingAs($admin)->get(route('platform.merchants.index', ['plan' => 'nonexistent']))
+            ->assertSessionHasErrors('plan');
+    }
+
+    public function test_merchant_360_view_shows_only_operational_metadata(): void
+    {
+        $admin = $this->admin();
+        [, $merchant] = $this->shop('review-shop');
+        $merchant->customers()->create(['phone' => '93700123456']);
+        $this->actingAs($admin)->get(route('platform.merchants.show', $merchant))
+            ->assertOk()->assertSee('MERCHANT 360')
+            ->assertSee('Customers')
+            ->assertSee('Outbound state')
+            ->assertDontSee('93700123456');
+    }
 }
