@@ -193,7 +193,8 @@ class ConversationalCartTest extends TestCase
         $this->assertSame($count, OutboundMessage::count());
         $this->assertDatabaseCount('cart_items', 1);
         $this->say($channel, 'START');
-        $this->assertStringContainsString('not available', $this->say($channel, 'CHECKOUT'));
+        $this->assertStringContainsString('Please type your name', $this->say($channel, 'CHECKOUT'));
+        $this->say($channel, 'CANCEL');
         $this->assertStringContainsString('Subtotal: 250.00 AFN', $this->say($channel, 'CART'));
         $this->assertDatabaseCount('orders', 0);
     }

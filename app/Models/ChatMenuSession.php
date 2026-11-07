@@ -12,7 +12,11 @@ class ChatMenuSession extends Model
         'screen', 'category_id', 'page', 'choice_ids', 'opted_out',
         'selected_product_id', 'pending_variant_id', 'pending_quantity',
         'pending_options', 'pending_group_index', 'pending_variant_page',
+        'checkout_step', 'checkout_token', 'checkout_customer_name',
+        'checkout_method', 'checkout_address',
     ];
+
+    protected $hidden = ['checkout_address'];
 
     protected function casts(): array
     {
@@ -24,6 +28,7 @@ class ChatMenuSession extends Model
             'pending_options' => 'array',
             'pending_group_index' => 'integer',
             'pending_variant_page' => 'integer',
+            'checkout_address' => 'encrypted',
         ];
     }
 

@@ -28,8 +28,8 @@ final class CartConversation
             return $this->carts->show($merchant, $channel, $session->customer_phone);
         }
 
-        if ($command === 'CHECKOUT' || $command === 'ORDER' || $command === 'PAY') {
-            return 'Checkout and payment are not available yet. Your cart is saved. Send CART to review it.';
+        if ($command === 'ORDER' || $command === 'PAY') {
+            return 'Payment is not available yet. Send CHECKOUT to place an unpaid order or CART to review your basket.';
         }
 
         if ($command === 'CLEAR') {
